@@ -29,6 +29,12 @@ class _HomeScreenState extends State<HomeScreen> {
         title: Text(_titles[_selectedIndex]),
       ),
       body: _tabs[_selectedIndex],
+      floatingActionButton: _selectedIndex == 1
+          ? FloatingActionButton(
+              onPressed: () => Navigator.pushNamed(context, '/add_tyre'),
+              child: const Icon(Icons.add),
+            )
+          : null,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         type: BottomNavigationBarType.fixed,

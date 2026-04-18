@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1023008347654",
+    "project_id": "tyretrack-5a239",
+    "storage_bucket": "tyretrack-5a239.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1023008347654:android:b65b9fba96ba467afd1587",
+        "android_client_info": {
+          "package_name": "com.example.tyre_management"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCiCl4rBFTEQsw9K4grq_fd-7sMjkRXZWg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
