@@ -9,6 +9,10 @@ import 'screens/splash_screen.dart';
 import 'screens/tyre/add_tyre_screen.dart';
 import 'screens/tyre/tyre_detail_screen.dart';
 import 'utils/app_theme.dart';
+import 'screens/public/about_us_screen.dart';
+import 'screens/public/contact_us_screen.dart';
+import 'screens/public/products_screen.dart';
+import 'screens/public/gallery_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,6 +39,10 @@ class TyreTrackApp extends StatelessWidget {
         '/home': (context) => const HomeScreen(),
         '/add_tyre': (context) => const AddTyreScreen(),
         '/tyre_detail': (context) => const TyreDetailScreen(),
+        '/about': (context) => const AboutUsScreen(),
+        '/contact': (context) => const ContactUsScreen(),
+        '/products': (context) => const ProductsScreen(),
+        '/gallery': (context) => const GalleryScreen(),
         '/book_service': (context) {
           final args = ModalRoute.of(context)?.settings.arguments;
           final tyreId = args is String ? args : '';
