@@ -1,13 +1,78 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../domain/providers/cart_provider.dart';
+import '../../../domain/providers/auth_provider.dart';
+import '../../../data/repositories/order_repository.dart';
+import '../../../data/models/order_model.dart';
+import '../../../data/services/razorpay_service.dart';
+import 'package:uuid/uuid.dart';
 
-class CartScreen extends ConsumerWidget {
+class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends ConsumerState<CartScreen> {
+  bool _isProcessing = false;
+
+  void _handleCheckout(double total, List<OrderItem> cartItems) {
+    final user = ref.read(authProvider).userModel;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please login to secure your checkout.')));
+      return;
+    }
+
+    setState(() => _isProcessing = true);
+    final razorpay = ref.read(razorpayServiceProvider);
+
+    razorpay.onSuccess = (response) async {
+       try {
+         final order = OrderModel(
+           orderId: const Uuid().v4(),
+           customerId: user.uid,
+           items: cartItems,
+           totalAmount: total,
+           status: 'pending',
+           paymentStatus: 'paid',
+           paymentId: response.paymentId,
+           deliveryAddress: {'address': 'Default Address'},
+           createdAt: DateTime.now(),
+         );
+         await ref.read(orderRepositoryProvider).createOrder(order);
+         if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payment Successful! Order Confirmed. ✨')));
+           ref.read(cartProvider.notifier).clear();
+           context.go('/home');
+         }
+       } catch (e) {
+         if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Order failed: $e')));
+           setState(() => _isProcessing = false);
+         }
+       }
+    };
+
+    razorpay.onFailure = (response) {
+       if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Payment Cancelled/Failed: ${response.message}')));
+           setState(() => _isProcessing = false);
+       }
+    };
+
+    razorpay.openCheckout(
+       amount: total,
+       contact: user.phone,
+       email: user.email ?? 'customer@jagadale.com',
+       description: 'Jagadale Tyre Order',
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final cartItems = ref.watch(cartProvider);
     final total = ref.read(cartProvider.notifier).totalAmount;
 
@@ -73,7 +138,12 @@ class CartScreen extends ConsumerWidget {
                      ],
                   ),
                   const SizedBox(height: 16),
-                  ElevatedButton(onPressed: () {}, child: const Text('Proceed to Payment')),
+                  ElevatedButton(
+                    onPressed: _isProcessing ? null : () => _handleCheckout(total, cartItems), 
+                    child: _isProcessing 
+                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white))
+                        : const Text('Proceed to Payment')
+                  ),
                ],
             ),
          ),

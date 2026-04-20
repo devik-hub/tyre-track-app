@@ -65,8 +65,8 @@ class OrderModel {
       paymentStatus: data['paymentStatus'] ?? 'pending',
       paymentId: data['paymentId'],
       deliveryAddress: Map<String, dynamic>.from(data['deliveryAddress'] ?? {}),
-      createdAt: data['createdAt'] != null ? (data['createdAt'] as Timestamp).toDate() : DateTime.now(),
-      estimatedDelivery: data['estimatedDelivery'] != null ? (data['estimatedDelivery'] as Timestamp).toDate() : null,
+      createdAt: _parseDate(data['createdAt']),
+      estimatedDelivery: data['estimatedDelivery'] != null ? _parseDate(data['estimatedDelivery']) : null,
       invoiceUrl: data['invoiceUrl'],
     );
   }
@@ -85,5 +85,12 @@ class OrderModel {
       'estimatedDelivery': estimatedDelivery != null ? Timestamp.fromDate(estimatedDelivery!) : null,
       'invoiceUrl': invoiceUrl,
     };
+  }
+
+  static DateTime _parseDate(dynamic v) {
+    if (v == null) return DateTime.now();
+    if (v is Timestamp) return v.toDate();
+    if (v is String) return DateTime.tryParse(v) ?? DateTime.now();
+    return DateTime.now();
   }
 }

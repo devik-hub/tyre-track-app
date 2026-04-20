@@ -18,7 +18,7 @@ class _TyreCatalogScreenState extends ConsumerState<TyreCatalogScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final productState = ref.watch(productProvider);
+    final productState = ref.watch(productStreamProvider);
 
     return Scaffold(
       appBar: AppBar(

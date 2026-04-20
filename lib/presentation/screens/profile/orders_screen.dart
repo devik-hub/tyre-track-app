@@ -8,89 +8,106 @@ class OrdersScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final orderState = ref.watch(orderProvider);
+    final ordersAsync = ref.watch(userOrdersProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Order History')),
-      body: orderState.when(
+      body: ordersAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.mrfRed)),
+        error: (e, _) => Center(child: Text('Error: $e')),
         data: (orders) {
-           if (orders.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                     const Icon(Icons.history, size: 80, color: Colors.grey),
-                     const SizedBox(height: 16),
-                     const Text('No orders found', style: TextStyle(fontSize: 18, color: Colors.grey)),
-                  ]
+          if (orders.isEmpty) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.history, size: 80, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text('No orders yet', style: TextStyle(fontSize: 18, color: Colors.grey)),
+                  SizedBox(height: 8),
+                  Text('Your order history will appear here', style: TextStyle(color: Colors.grey)),
+                ],
+              ),
+            );
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: orders.length,
+            itemBuilder: (context, index) {
+              final order = orders[index];
+              final statusColor = _getStatusColor(order.status);
+              return Card(
+                margin: const EdgeInsets.only(bottom: 16),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Order #${order.orderId.substring(0, 6).toUpperCase()}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(color: statusColor.withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
+                            child: Text(order.status.toUpperCase(), style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 24),
+                      ...order.items.map((item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.tire_repair, size: 16, color: Colors.grey),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text('${item.name} x${item.quantity}', style: const TextStyle(fontSize: 13))),
+                            Text('₹${item.price.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      )),
+                      const Divider(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('${order.createdAt.day}/${order.createdAt.month}/${order.createdAt.year}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                          Text('Total: ₹${order.totalAmount.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.mrfRed, fontSize: 16)),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Text('Payment: ', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: order.paymentStatus == 'paid' ? Colors.green.shade100 : Colors.orange.shade100,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(order.paymentStatus.toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold,
+                                color: order.paymentStatus == 'paid' ? Colors.green : Colors.orange)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               );
-           }
-           return ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: orders.length,
-              itemBuilder: (context, index) {
-                 final order = orders[index];
-                 return Card(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    child: Padding(
-                       padding: const EdgeInsets.all(16.0),
-                       child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                             Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                   Text('Order #${order.orderId.substring(0,6).toUpperCase()}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                   Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                         color: order.status == 'delivered' ? AppColors.mrfGreen.withOpacity(0.1) : Colors.grey[200], 
-                                         borderRadius: BorderRadius.circular(4)
-                                      ),
-                                      child: Text(
-                                         order.status.toUpperCase(), 
-                                         style: TextStyle(
-                                            color: order.status == 'delivered' ? AppColors.mrfGreen : Colors.grey[700], 
-                                            fontSize: 12, 
-                                            fontWeight: FontWeight.bold
-                                         )
-                                      ),
-                                   )
-                                ],
-                             ),
-                             const Divider(height: 24),
-                             Row(
-                                children: [
-                                   Container(width: 40, height: 40, color: Colors.grey[200], child: const Icon(Icons.tire_repair, size: 20)),
-                                   const SizedBox(width: 12),
-                                   Expanded(
-                                      child: Column(
-                                         crossAxisAlignment: CrossAxisAlignment.start,
-                                         children: [
-                                            Text('${order.items.length} Items purchased', style: const TextStyle(fontWeight: FontWeight.w600)),
-                                         ]
-                                      ),
-                                   ),
-                                   Text('₹${order.totalAmount}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.mrfRed)),
-                                ],
-                             ),
-                             const SizedBox(height: 16),
-                             OutlinedButton(
-                                onPressed: () {},
-                                style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 36)),
-                                child: const Text('View Invoice'),
-                             )
-                          ],
-                       ),
-                    )
-                 );
-              },
-           );
+            },
+          );
         },
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.mrfRed)),
-        error: (err, stack) => Center(child: Text('Error fetching orders: $err')),
       ),
     );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'pending': return Colors.orange;
+      case 'processing': return Colors.blue;
+      case 'shipped': return Colors.purple;
+      case 'delivered': return Colors.green;
+      case 'cancelled': return Colors.red;
+      default: return Colors.grey;
+    }
   }
 }

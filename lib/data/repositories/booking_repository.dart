@@ -8,28 +8,38 @@ final bookingRepositoryProvider = Provider<BookingRepository>((ref) => BookingRe
 class BookingRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  CollectionReference get _col => _firestore.collection(FirebaseConstants.serviceBookingsCollection);
+
+  // ─── Customer: My Bookings ───
+  Stream<List<BookingModel>> streamUserBookings(String customerId) {
+    return _col.where('customerId', isEqualTo: customerId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs.map((doc) => BookingModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList());
+  }
+
+  // ─── Admin: All Bookings ───
+  Stream<List<BookingModel>> streamAllBookings() {
+    return _col.orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs.map((doc) => BookingModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList());
+  }
+
+  // ─── Create ───
   Future<void> createBooking(BookingModel booking) async {
-    await _firestore.collection(FirebaseConstants.serviceBookingsCollection).doc(booking.bookingId).set(booking.toMap());
+    await _col.doc(booking.bookingId).set(booking.toMap());
   }
 
-  Future<List<BookingModel>> getCustomerBookings(String customerId) async {
-    final snapshot = await _firestore
-        .collection(FirebaseConstants.serviceBookingsCollection)
-        .where('customerId', isEqualTo: customerId)
-        .orderBy('createdAt', descending: true)
-        .get();
-    return snapshot.docs.map((doc) => BookingModel.fromMap(doc.data(), doc.id)).toList();
-  }
-  
-  Future<List<BookingModel>> getAllBookings() async {
-     final snapshot = await _firestore
-        .collection(FirebaseConstants.serviceBookingsCollection)
-        .orderBy('createdAt', descending: true)
-        .get();
-     return snapshot.docs.map((doc) => BookingModel.fromMap(doc.data(), doc.id)).toList();
+  // ─── Admin: Update Status ───
+  Future<void> updateBookingStatus(String bookingId, String newStatus, {String? adminNotes, String? technician}) async {
+    final updates = <String, dynamic>{'status': newStatus};
+    if (adminNotes != null) updates['adminNotes'] = adminNotes;
+    if (technician != null) updates['assignedTechnician'] = technician;
+    await _col.doc(bookingId).update(updates);
   }
 
-  Future<void> updateBookingStatus(String bookingId, String status) async {
-    await _firestore.collection(FirebaseConstants.serviceBookingsCollection).doc(bookingId).update({'status': status});
+  // ─── Delete ───
+  Future<void> deleteBooking(String bookingId) async {
+    await _col.doc(bookingId).delete();
   }
 }

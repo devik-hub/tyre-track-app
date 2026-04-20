@@ -1,21 +1,62 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../domain/providers/auth_provider.dart';
+import '../../../data/services/razorpay_service.dart';
+// Note: Assuming you have a BookingProvider for actual backend submission.
+// Adjust the import if needed.
+// import '../../../domain/providers/booking_provider.dart';
 
-class BookServiceScreen extends StatefulWidget {
+class BookServiceScreen extends ConsumerStatefulWidget {
   const BookServiceScreen({super.key});
 
   @override
-  State<BookServiceScreen> createState() => _BookServiceScreenState();
+  ConsumerState<BookServiceScreen> createState() => _BookServiceScreenState();
 }
 
-class _BookServiceScreenState extends State<BookServiceScreen> {
+class _BookServiceScreenState extends ConsumerState<BookServiceScreen> {
   int _currentStep = 0;
   String _selectedService = 'Retreading';
   final _issueController = TextEditingController();
+  bool _isProcessing = false;
 
   Future<void> _submitBooking() async {
-     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Booking Confirmed!')));
-     Navigator.pop(context);
+    final user = ref.read(authProvider).userModel;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please login to book a service.')));
+      return;
+    }
+
+    setState(() => _isProcessing = true);
+    final razorpay = ref.read(razorpayServiceProvider);
+
+    razorpay.onSuccess = (response) async {
+       // Perform backend logic here to register booking in Firestore.
+       // e.g. ref.read(bookingProvider.notifier).createBooking(...);
+
+       if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payment Successful! Service Booked. ✨')));
+           context.go('/home');
+       }
+    };
+
+    razorpay.onFailure = (response) {
+       if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Payment Cancelled/Failed: ${response.message}')));
+           setState(() => _isProcessing = false);
+       }
+    };
+
+    // Calculate a dummy price based on the selected service for demo purposes
+    double estimatedCost = _selectedService == 'Retreading' ? 1200.0 : 500.0;
+
+    razorpay.openCheckout(
+       amount: estimatedCost,
+       contact: user.phone,
+       email: user.email ?? 'customer@jagadale.com',
+       description: 'Jagadale Retreads: $_selectedService',
+    );
   }
 
   @override
@@ -28,21 +69,30 @@ class _BookServiceScreenState extends State<BookServiceScreen> {
           if (_currentStep < 3) {
             setState(() => _currentStep += 1);
           } else {
-            _submitBooking();
+            if (!_isProcessing) {
+               _submitBooking();
+            }
           }
         },
         onStepCancel: () {
-          if (_currentStep > 0) setState(() => _currentStep -= 1);
+          if (_currentStep > 0 && !_isProcessing) setState(() => _currentStep -= 1);
         },
         controlsBuilder: (context, details) {
           return Padding(
             padding: const EdgeInsets.only(top: 24.0),
             child: Row(
               children: [
-                Expanded(child: ElevatedButton(onPressed: details.onStepContinue, child: Text(_currentStep == 3 ? 'Confirm Booking' : 'Continue'))),
+                Expanded(
+                   child: ElevatedButton(
+                      onPressed: _isProcessing ? null : details.onStepContinue, 
+                      child: _isProcessing && _currentStep == 3
+                         ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white))
+                         : Text(_currentStep == 3 ? 'Pay & Confirm Booking' : 'Continue')
+                   )
+                ),
                 const SizedBox(width: 16),
                 if (_currentStep > 0)
-                   Expanded(child: OutlinedButton(onPressed: details.onStepCancel, child: const Text('Back'))),
+                   Expanded(child: OutlinedButton(onPressed: _isProcessing ? null : details.onStepCancel, child: const Text('Back'))),
               ],
             ),
           );

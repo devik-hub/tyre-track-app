@@ -40,7 +40,7 @@ class BookingModel {
       vehicleId: data['vehicleId'] ?? '',
       serviceType: data['serviceType'] ?? 'retreading',
       tyrePositions: List<String>.from(data['tyrePositions'] ?? []),
-      preferredDate: data['preferredDate'] != null ? (data['preferredDate'] as Timestamp).toDate() : DateTime.now(),
+      preferredDate: _parseDate(data['preferredDate']),
       preferredTimeSlot: data['preferredTimeSlot'] ?? 'morning',
       currentTreadDepth: data['currentTreadDepth'] != null ? (data['currentTreadDepth'] as num).toDouble() : null,
       issueDescription: data['issueDescription'],
@@ -48,7 +48,7 @@ class BookingModel {
       status: data['status'] ?? 'pending',
       assignedTechnician: data['assignedTechnician'],
       adminNotes: data['adminNotes'],
-      createdAt: data['createdAt'] != null ? (data['createdAt'] as Timestamp).toDate() : DateTime.now(),
+      createdAt: _parseDate(data['createdAt']),
     );
   }
 
@@ -69,5 +69,12 @@ class BookingModel {
       'adminNotes': adminNotes,
       'createdAt': Timestamp.fromDate(createdAt),
     };
+  }
+
+  static DateTime _parseDate(dynamic v) {
+    if (v == null) return DateTime.now();
+    if (v is Timestamp) return v.toDate();
+    if (v is String) return DateTime.tryParse(v) ?? DateTime.now();
+    return DateTime.now();
   }
 }

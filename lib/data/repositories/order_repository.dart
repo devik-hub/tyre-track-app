@@ -8,20 +8,36 @@ final orderRepositoryProvider = Provider<OrderRepository>((ref) => OrderReposito
 class OrderRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Future<void> createOrder(OrderModel order) async {
-    await _firestore.collection(FirebaseConstants.ordersCollection).doc(order.orderId).set(order.toMap());
-  }
+  CollectionReference get _col => _firestore.collection(FirebaseConstants.ordersCollection);
 
-  Future<List<OrderModel>> getCustomerOrders(String customerId) async {
-    final snapshot = await _firestore
-        .collection(FirebaseConstants.ordersCollection)
-        .where('customerId', isEqualTo: customerId)
+  // ─── Customer: My Orders ───
+  Stream<List<OrderModel>> streamUserOrders(String customerId) {
+    return _col.where('customerId', isEqualTo: customerId)
         .orderBy('createdAt', descending: true)
-        .get();
-    return snapshot.docs.map((doc) => OrderModel.fromMap(doc.data(), doc.id)).toList();
+        .snapshots()
+        .map((snap) => snap.docs.map((doc) => OrderModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList());
   }
 
-  Future<void> updateOrderStatus(String orderId, String status) async {
-    await _firestore.collection(FirebaseConstants.ordersCollection).doc(orderId).update({'status': status});
+  // ─── Admin: All Orders ───
+  Stream<List<OrderModel>> streamAllOrders() {
+    return _col.orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs.map((doc) => OrderModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList());
+  }
+
+  // ─── Create ───
+  Future<void> createOrder(OrderModel order) async {
+    await _col.doc(order.orderId).set(order.toMap());
+  }
+
+  // ─── Admin: Update Status ───
+  Future<void> updateOrderStatus(String orderId, String newStatus) async {
+    await _col.doc(orderId).update({'status': newStatus});
+  }
+
+  Future<void> updatePaymentStatus(String orderId, String paymentStatus, {String? paymentId}) async {
+    final updates = <String, dynamic>{'paymentStatus': paymentStatus};
+    if (paymentId != null) updates['paymentId'] = paymentId;
+    await _col.doc(orderId).update(updates);
   }
 }

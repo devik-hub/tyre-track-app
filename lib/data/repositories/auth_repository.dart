@@ -1,5 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import '../../core/constants/firebase_constants.dart';
 import '../models/user_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,11 +11,14 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) => AuthRepository(
 class AuthRepository {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
+
+  bool get isGoogleSignInAvailable => true; // Available on all platforms now
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
-
   User? get currentUser => _auth.currentUser;
 
+  // ─── Phone Auth ───
   Future<void> verifyPhoneNumber(
       String phoneNumber,
       Function(String, int?) codeSent,
@@ -28,11 +33,49 @@ class AuthRepository {
     );
   }
 
-  Future<UserCredential> signInWithCredential(PhoneAuthCredential credential) async {
+  Future<UserCredential> signInWithPhoneCredential(PhoneAuthCredential credential) async {
     return await _auth.signInWithCredential(credential);
   }
 
+  // ─── Email/Password Auth ───
+  Future<UserCredential> signInWithEmail(String email, String password) async {
+    return await _auth.signInWithEmailAndPassword(email: email, password: password);
+  }
+
+  Future<UserCredential> registerWithEmail(String email, String password) async {
+    return await _auth.createUserWithEmailAndPassword(email: email, password: password);
+  }
+
+  // ─── Google Auth ───
+  Future<UserCredential?> signInWithGoogle() async {
+    try {
+      if (kIsWeb) {
+        // On web, use Firebase Auth's built-in popup — no extra config needed
+        final googleProvider = GoogleAuthProvider();
+        googleProvider.addScope('email');
+        googleProvider.addScope('profile');
+        return await _auth.signInWithPopup(googleProvider);
+      } else {
+        // On mobile, use google_sign_in package (reads from google-services.json)
+        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+        if (googleUser == null) return null;
+
+        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+        return await _auth.signInWithCredential(credential);
+      }
+    } catch (e) {
+      debugPrint('Google Sign-In Error: $e');
+      rethrow;
+    }
+  }
+
+  // ─── Common ───
   Future<void> signOut() async {
+    try { await _googleSignIn.signOut(); } catch (_) {}
     await _auth.signOut();
   }
 

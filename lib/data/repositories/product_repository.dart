@@ -8,24 +8,43 @@ final productRepositoryProvider = Provider<ProductRepository>((ref) => ProductRe
 class ProductRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  CollectionReference get _col => _firestore.collection(FirebaseConstants.productsCollection);
+
+  // ─── Real-Time Stream ───
+  Stream<List<ProductModel>> streamProducts() {
+    return _col.orderBy('createdAt', descending: true).snapshots().map(
+      (snap) => snap.docs.map((doc) => ProductModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList(),
+    );
+  }
+
+  // ─── One-time fetch ───
   Future<List<ProductModel>> getProducts() async {
-    try {
-      final snapshot = await _firestore.collection(FirebaseConstants.productsCollection).get();
-      return snapshot.docs.map((doc) => ProductModel.fromMap(doc.data(), doc.id)).toList();
-    } catch (e) {
-      throw Exception('Failed to load products: $e');
-    }
+    final snapshot = await _col.orderBy('createdAt', descending: true).get();
+    return snapshot.docs.map((doc) => ProductModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList();
   }
 
   Future<ProductModel?> getProductById(String id) async {
-    try {
-      final doc = await _firestore.collection(FirebaseConstants.productsCollection).doc(id).get();
-      if (doc.exists) {
-         return ProductModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
-      }
-      return null;
-    } catch (e) {
-      throw Exception('Failed to load product: $e');
+    final doc = await _col.doc(id).get();
+    if (doc.exists) {
+      return ProductModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
     }
+    return null;
+  }
+
+  // ─── Admin CRUD ───
+  Future<void> createProduct(ProductModel product) async {
+    await _col.doc(product.productId).set(product.toMap());
+  }
+
+  Future<void> updateProduct(ProductModel product) async {
+    await _col.doc(product.productId).update(product.toMap());
+  }
+
+  Future<void> deleteProduct(String productId) async {
+    await _col.doc(productId).delete();
+  }
+
+  Future<void> updateStock(String productId, int newQuantity) async {
+    await _col.doc(productId).update({'stockQuantity': newQuantity});
   }
 }

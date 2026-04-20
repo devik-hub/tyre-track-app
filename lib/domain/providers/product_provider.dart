@@ -2,24 +2,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/product_model.dart';
 import '../../data/repositories/product_repository.dart';
 
-final productProvider = StateNotifierProvider<ProductNotifier, AsyncValue<List<ProductModel>>>((ref) {
-  return ProductNotifier(ref.read(productRepositoryProvider));
+/// Real-time stream of all products from Firestore
+final productStreamProvider = StreamProvider<List<ProductModel>>((ref) {
+  return ref.read(productRepositoryProvider).streamProducts();
 });
 
-class ProductNotifier extends StateNotifier<AsyncValue<List<ProductModel>>> {
-  final ProductRepository _productRepo;
-
-  ProductNotifier(this._productRepo) : super(const AsyncValue.loading()) {
-    loadProducts();
+/// Single product by ID (derived from stream)
+final productByIdProvider = Provider.family<ProductModel?, String>((ref, productId) {
+  final products = ref.watch(productStreamProvider).valueOrNull ?? [];
+  try {
+    return products.firstWhere((p) => p.productId == productId);
+  } catch (_) {
+    return null;
   }
-
-  Future<void> loadProducts() async {
-    state = const AsyncValue.loading();
-    try {
-      final products = await _productRepo.getProducts();
-      state = AsyncValue.data(products);
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
-    }
-  }
-}
+});

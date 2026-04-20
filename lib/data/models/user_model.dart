@@ -34,7 +34,7 @@ class UserModel {
       profileImageUrl: data['profileImageUrl'],
       role: data['role'] ?? 'customer',
       fcmToken: data['fcmToken'] ?? '',
-      createdAt: data['createdAt'] != null ? (data['createdAt'] as Timestamp).toDate() : DateTime.now(),
+      createdAt: _parseDate(data['createdAt']),
       isActive: data['isActive'] ?? true,
       preferredLanguage: data['preferredLanguage'] ?? 'en',
     );
@@ -77,5 +77,12 @@ class UserModel {
       isActive: isActive ?? this.isActive,
       preferredLanguage: preferredLanguage ?? this.preferredLanguage,
     );
+  }
+
+  static DateTime _parseDate(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is Timestamp) return value.toDate();
+    if (value is String) return DateTime.tryParse(value) ?? DateTime.now();
+    return DateTime.now();
   }
 }

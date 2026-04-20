@@ -1,0 +1,53 @@
+Analyzing tyre-track-app...                                     
+
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/app/theme/app_theme.dart:62:62 • deprecated_member_use
+warning • Unused import: '../../data/models/product_model.dart' • lib/domain/providers/admin_provider.dart:2:8 • unused_import
+warning • Unused import: '../../data/models/booking_model.dart' • lib/domain/providers/admin_provider.dart:3:8 • unused_import
+warning • Unused import: '../../data/models/order_model.dart' • lib/domain/providers/admin_provider.dart:4:8 • unused_import
+   info • 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre • lib/presentation/screens/admin/admin_orders_screen.dart:237:17 • deprecated_member_use
+   info • 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre • lib/presentation/screens/admin/manage_bookings_screen.dart:219:19 • deprecated_member_use
+warning • Unused import: '../../../data/repositories/auth_repository.dart' • lib/presentation/screens/auth/login_screen.dart:5:8 • unused_import
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/screens/auth/login_screen.dart:94:48 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/screens/auth/login_screen.dart:96:67 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/screens/auth/register_screen.dart:133:46 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/screens/home/home_screen.dart:258:58 • deprecated_member_use
+   info • Use 'const' with the constructor to improve performance • lib/presentation/screens/my_vehicles/vehicle_list_screen.dart:18:22 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/presentation/screens/my_vehicles/vehicle_list_screen.dart:19:24 • prefer_const_constructors
+   info • Use 'const' literals as arguments to constructors of '@immutable' classes • lib/presentation/screens/my_vehicles/vehicle_list_screen.dart:21:29 • prefer_const_literals_to_create_immutables
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/screens/my_vehicles/vehicle_list_screen.dart:44:83 • deprecated_member_use
+warning • The left operand can't be null, so the right operand is never executed • lib/presentation/screens/new_tyre/cart_screen.dart:69:29 • dead_null_aware_expression
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/screens/new_tyre/cart_screen.dart:128:58 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/screens/profile/help_support_screen.dart:61:65 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/screens/profile/notifications_screen.dart:35:58 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/screens/profile/notifications_screen.dart:38:90 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/screens/profile/notifications_screen.dart:38:130 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/screens/profile/orders_screen.dart:52:74 • deprecated_member_use
+   info • Use 'const' with the constructor to improve performance • lib/presentation/screens/public/about_us_screen.dart:42:13 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/presentation/screens/public/about_us_screen.dart:44:22 • prefer_const_constructors
+   info • Use 'const' literals as arguments to constructors of '@immutable' classes • lib/presentation/screens/public/about_us_screen.dart:46:27 • prefer_const_literals_to_create_immutables
+   info • Use 'const' with the constructor to improve performance • lib/presentation/screens/public/about_us_screen.dart:47:19 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/presentation/screens/public/about_us_screen.dart:48:28 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/presentation/screens/public/about_us_screen.dart:50:30 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/presentation/screens/public/about_us_screen.dart:52:32 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/presentation/screens/public/about_us_screen.dart:66:19 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/presentation/screens/public/about_us_screen.dart:67:28 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/presentation/screens/public/about_us_screen.dart:69:30 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/presentation/screens/public/about_us_screen.dart:71:32 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/presentation/screens/public/contact_us_screen.dart:24:15 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/presentation/screens/public/contact_us_screen.dart:26:24 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/presentation/screens/public/contact_us_screen.dart:28:26 • prefer_const_constructors
+warning • Unused import: '../../../app/theme/app_colors.dart' • lib/presentation/screens/remold_service/book_service_screen.dart:4:8 • unused_import
+warning • The left operand can't be null, so the right operand is never executed • lib/presentation/screens/remold_service/book_service_screen.dart:57:29 • dead_null_aware_expression
+   info • 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre • lib/presentation/screens/remold_service/book_service_screen.dart:104:15 • deprecated_member_use
+warning • Unused import: 'dart:math' • lib/presentation/screens/remold_service/services_home_screen.dart:3:8 • unused_import
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/screens/remold_service/services_home_screen.dart:31:51 • deprecated_member_use
+warning • Unused import: 'package:firebase_auth/firebase_auth.dart' • lib/presentation/screens/splash/splash_screen.dart:3:8 • unused_import
+   info • Use 'const' with the constructor to improve performance • lib/presentation/screens/splash/splash_screen.dart:63:12 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/presentation/screens/splash/splash_screen.dart:65:13 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/presentation/screens/splash/splash_screen.dart:66:16 • prefer_const_constructors
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/home/dashboard_tab.dart:26:37 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/home/dashboard_tab.dart:192:31 • deprecated_member_use
+   info • Use 'const' with the constructor to improve performance • lib/screens/public/contact_us_screen.dart:23:15 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/screens/public/contact_us_screen.dart:25:24 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/screens/public/contact_us_screen.dart:27:26 • prefer_const_constructors
+

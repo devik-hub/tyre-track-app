@@ -3,14 +3,17 @@ import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../app/theme/app_colors.dart';
 
-class SplashScreen extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../domain/providers/auth_provider.dart';
+
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
@@ -18,18 +21,41 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _navigateToNext() async {
-    // Show splash for 2.5 seconds before checking auth state
-    await Future.delayed(const Duration(milliseconds: 2500));
+    // Show splash for 1.5 seconds min
+    await Future.delayed(const Duration(milliseconds: 1500));
     
     if (!mounted) return;
     
-    // Check direct Firebase auth state to bypass Riverpod async init delay
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      context.go('/home');
+    // We need to wait for Riverpod to fetch the user model so we know their role
+    final authState = ref.read(authProvider);
+    
+    if (authState.isLoading) {
+      // If it's still loading the Firestore document, wait a little bit
+      // Setup a listener that fires once when loading completes
+      ref.listenManual<AuthState>(authProvider, (prev, next) {
+        if (!next.isLoading) {
+           _routeUser(next);
+        }
+      });
     } else {
-      context.go('/login');
+       _routeUser(authState);
     }
+  }
+
+  void _routeUser(AuthState authState) {
+     if (!mounted) return;
+     if (authState.userModel != null) {
+        final user = authState.userModel!;
+        if (user.phone.isEmpty && user.uid != 'dev_mock_id_customer' && user.uid != 'dev_mock_id_admin') {
+           context.go('/register');
+        } else if (user.role == 'admin') {
+           context.go('/admin');
+        } else {
+           context.go('/home');
+        }
+     } else {
+        context.go('/login');
+     }
   }
 
   @override

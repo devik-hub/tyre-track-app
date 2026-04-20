@@ -39,18 +39,32 @@ class _MainScaffoldState extends State<MainScaffold> {
         shape: const CircularNotchedRectangle(),
         notchMargin: 8.0,
         clipBehavior: Clip.antiAlias,
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: _onTap,
-          selectedItemColor: AppColors.mrfRed,
-          unselectedItemColor: AppColors.mrfMidGrey,
-          type: BottomNavigationBarType.fixed,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.shopping_bag_outlined), activeIcon: Icon(Icons.shopping_bag), label: 'Buy Tires'),
-            BottomNavigationBarItem(icon: Icon(Icons.build, color: Colors.transparent), label: 'Services'), // Placeholder for FAB
-            BottomNavigationBarItem(icon: Icon(Icons.directions_car_outlined), activeIcon: Icon(Icons.directions_car), label: 'Vehicles'),
-            BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Account'),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildNavItem(Icons.home_outlined, Icons.home, 'Home', 0),
+            _buildNavItem(Icons.shopping_bag_outlined, Icons.shopping_bag, 'Buy Tires', 1),
+            const SizedBox(width: 48), // Gap for FAB
+            _buildNavItem(Icons.directions_car_outlined, Icons.directions_car, 'Vehicles', 3),
+            _buildNavItem(Icons.person_outline, Icons.person, 'Account', 4),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(IconData icon, IconData activeIcon, String label, int index) {
+    final isSelected = _currentIndex == index;
+    return InkWell(
+      onTap: () => _onTap(index),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 8.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(isSelected ? activeIcon : icon, color: isSelected ? AppColors.mrfRed : AppColors.mrfMidGrey, size: 24),
+            const SizedBox(height: 2),
+            Text(label, style: TextStyle(fontSize: 10, color: isSelected ? AppColors.mrfRed : AppColors.mrfMidGrey, fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal)),
           ],
         ),
       ),

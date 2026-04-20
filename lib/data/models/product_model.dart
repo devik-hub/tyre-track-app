@@ -54,7 +54,7 @@ class ProductModel {
       specifications: Map<String, String>.from(data['specifications'] ?? {}),
       isActive: data['isActive'] ?? true,
       isFeatured: data['isFeatured'] ?? false,
-      createdAt: data['createdAt'] != null ? (data['createdAt'] as Timestamp).toDate() : DateTime.now(),
+      createdAt: _parseDate(data['createdAt']),
     );
   }
 
@@ -77,5 +77,12 @@ class ProductModel {
       'isFeatured': isFeatured,
       'createdAt': Timestamp.fromDate(createdAt),
     };
+  }
+
+  static DateTime _parseDate(dynamic v) {
+    if (v == null) return DateTime.now();
+    if (v is Timestamp) return v.toDate();
+    if (v is String) return DateTime.tryParse(v) ?? DateTime.now();
+    return DateTime.now();
   }
 }

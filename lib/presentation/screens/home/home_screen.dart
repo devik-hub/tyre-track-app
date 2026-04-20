@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../domain/providers/auth_provider.dart';
+import '../../../domain/providers/product_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -16,24 +17,24 @@ class HomeScreen extends ConsumerWidget {
       appBar: AppBar(
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Image.asset('assets/images/logo.png', errorBuilder: (c,e,s) => const Icon(Icons.tire_repair)),
+          child: Image.asset('assets/images/logo.png', errorBuilder: (c, e, s) => const Icon(Icons.tire_repair)),
         ),
         title: const Text('Jagadale Retreads'),
         actions: [
-          IconButton(icon: const Icon(Icons.search), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.search), onPressed: () => context.go('/tyres')),
           IconButton(icon: const Icon(Icons.notifications_none), onPressed: () => context.push('/notifications')),
         ],
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            _buildGreetingBanner(context, userName),
+            _buildGreetingBanner(context, userName, user?.role ?? 'customer'),
             const SizedBox(height: 16),
             _buildQuickActions(context),
             const SizedBox(height: 16),
             _buildServicesSection(context),
             const SizedBox(height: 16),
-             _buildFeaturedTyres(context),
+            _buildFeaturedTyres(context, ref),
             const SizedBox(height: 24),
             _buildCompanyQuickLinks(context),
             const SizedBox(height: 24),
@@ -43,7 +44,10 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildGreetingBanner(BuildContext context, String name) {
+  Widget _buildGreetingBanner(BuildContext context, String name, String role) {
+    final hour = DateTime.now().hour;
+    final greeting = hour < 12 ? 'Good Morning' : (hour < 17 ? 'Good Afternoon' : 'Good Evening');
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -57,7 +61,7 @@ class HomeScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Good Morning, $name! 👋', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+          Text('$greeting, $name! 👋', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           const Text('Your tyre health is being monitored', style: TextStyle(color: Colors.white70, fontSize: 14)),
         ],
@@ -79,7 +83,7 @@ class HomeScreen extends ConsumerWidget {
           _buildActionCard(context, 'Buy New Tyre', Icons.shopping_bag, () => context.go('/tyres')),
           _buildActionCard(context, 'Book Service', Icons.build, () => context.go('/services')),
           _buildActionCard(context, 'My Vehicles', Icons.directions_car, () => context.go('/vehicles')),
-          _buildActionCard(context, 'Track Order', Icons.local_shipping, () {}),
+          _buildActionCard(context, 'Track Order', Icons.local_shipping, () => context.push('/orders')),
         ],
       ),
     );
@@ -103,7 +107,12 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildServicesSection(BuildContext context) {
-    final services = ['Retreading', 'Remoulding', 'Inspection', 'New Fitment'];
+    final services = [
+      {'name': 'Retreading', 'icon': Icons.autorenew},
+      {'name': 'Remoulding', 'icon': Icons.handyman},
+      {'name': 'Inspection', 'icon': Icons.search},
+      {'name': 'New Fitment', 'icon': Icons.build_circle},
+    ];
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
@@ -117,17 +126,20 @@ class HomeScreen extends ConsumerWidget {
               scrollDirection: Axis.horizontal,
               itemCount: services.length,
               itemBuilder: (context, index) {
-                return Container(
-                  width: 100,
-                  margin: const EdgeInsets.only(right: 12),
-                  child: Card(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.handyman, color: AppColors.mrfRed),
-                        const SizedBox(height: 8),
-                        Text(services[index], textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                      ],
+                return InkWell(
+                  onTap: () => context.go('/services'),
+                  child: Container(
+                    width: 100,
+                    margin: const EdgeInsets.only(right: 12),
+                    child: Card(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(services[index]['icon'] as IconData, color: AppColors.mrfRed),
+                          const SizedBox(height: 8),
+                          Text(services[index]['name'] as String, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -139,7 +151,9 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFeaturedTyres(BuildContext context) {
+  Widget _buildFeaturedTyres(BuildContext context, WidgetRef ref) {
+    final productsAsync = ref.watch(productStreamProvider);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
@@ -154,34 +168,56 @@ class HomeScreen extends ConsumerWidget {
           ),
           SizedBox(
             height: 200,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: 3,
-              itemBuilder: (context, index) {
-                return Container(
-                  width: 160,
-                  margin: const EdgeInsets.only(right: 12),
-                  child: Card(
-                    clipBehavior: Clip.antiAlias,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(height: 100, color: Colors.grey[200], child: const Center(child: Icon(Icons.image, size: 50, color: Colors.grey))),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
+            child: productsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('Unable to load products', style: TextStyle(color: Colors.grey.shade500))),
+              data: (products) {
+                if (products.isEmpty) {
+                  return const Center(child: Text('No products yet. Admin can add from dashboard.', style: TextStyle(color: Colors.grey)));
+                }
+                final featured = products.take(5).toList();
+                return ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: featured.length,
+                  itemBuilder: (context, index) {
+                    final p = featured[index];
+                    return InkWell(
+                      onTap: () => context.push('/tyre_detail', extra: p.productId),
+                      child: Container(
+                        width: 160,
+                        margin: const EdgeInsets.only(right: 12),
+                        child: Card(
+                          clipBehavior: Clip.antiAlias,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text('MRF ZTX', style: TextStyle(fontWeight: FontWeight.bold)),
-                              Text('195/65 R15', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                              SizedBox(height: 4),
-                              Text('₹ 4,500', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.mrfRed)),
+                            children: [
+                              Container(
+                                height: 100,
+                                color: Colors.grey[200],
+                                child: Center(
+                                  child: p.imageUrls.isNotEmpty
+                                      ? Image.network(p.imageUrls.first, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.tire_repair, size: 40, color: Colors.grey))
+                                      : const Icon(Icons.tire_repair, size: 40, color: Colors.grey),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                    Text('${p.brand} • ${p.size}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                                    const SizedBox(height: 4),
+                                    Text('₹${p.price.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.mrfRed)),
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
+                      ),
+                    );
+                  },
                 );
               },
             ),
