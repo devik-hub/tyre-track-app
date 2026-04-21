@@ -61,12 +61,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.mrfRed,
+      backgroundColor: AppColors.mrfWhite,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.tire_repair, size: 80, color: Colors.white),
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              height: 100,
+              width: 100,
+            ),
             SizedBox(height: 16),
             Text(
               'Jagadale Retreads',

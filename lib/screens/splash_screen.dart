@@ -41,10 +41,10 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.directions_car,
-              size: 100,
-              color: Colors.blue,
+            Image.asset(
+              'assets/images/logo.png',
+              height: 100,
+              width: 100,
             ),
             SizedBox(height: 20),
             Text(
