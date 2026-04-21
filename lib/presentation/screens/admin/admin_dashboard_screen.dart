@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../app/routes/app_routes.dart';
 import '../../../domain/providers/auth_provider.dart';
 import '../../../domain/providers/admin_provider.dart';
 
@@ -24,7 +25,7 @@ class AdminDashboardScreen extends ConsumerWidget {
             icon: const Icon(Icons.logout, color: Colors.white), 
             onPressed: () async {
               await ref.read(authProvider.notifier).logout();
-              if (context.mounted) context.go('/login');
+              if (context.mounted) context.go(AppRoutes.login);
             },
           ),
         ],
@@ -69,15 +70,17 @@ class AdminDashboardScreen extends ConsumerWidget {
             const SizedBox(height: 32),
             const Text('QUICK ACTIONS', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: Colors.grey)),
             const SizedBox(height: 16),
-            _buildActionTile(context, Icons.inventory_2_rounded, 'Manage Inventory', 'Add, edit, or remove MRF products from the mobile catalog', '/admin/inventory'),
+            _buildActionTile(context, Icons.inventory_2_rounded, 'Manage Inventory', 'Add, edit, or remove MRF products from the mobile catalog', AppRoutes.adminInventory),
             const SizedBox(height: 16),
-            _buildActionTile(context, Icons.build_rounded, 'Service Bookings', 'Process and assign technicians to customer service requests', '/admin/bookings'),
+            _buildActionTile(context, Icons.build_rounded, 'Service Bookings', 'Process and assign technicians to customer service requests', AppRoutes.adminBookings),
             const SizedBox(height: 16),
-            _buildActionTile(context, Icons.receipt_long_rounded, 'Customer Orders', 'Track fulfillment and dispatch new tyre orders', '/admin/orders'),
+            _buildActionTile(context, Icons.receipt_long_rounded, 'Customer Orders', 'Track fulfillment and dispatch new tyre orders', AppRoutes.adminOrders),
             const SizedBox(height: 16),
-            _buildActionTile(context, Icons.miscellaneous_services_rounded, 'Service Availability', 'Enable or disable services for today based on workload', '/admin/services'),
+            _buildActionTile(context, Icons.miscellaneous_services_rounded, 'Service Availability', 'Enable or disable services for today based on workload', AppRoutes.adminServices),
             const SizedBox(height: 16),
-            _buildActionTile(context, Icons.category_rounded, 'Vehicle Categories', 'Create and manage vehicle categories for the catalog', '/admin/categories'),
+            _buildActionTile(context, Icons.category_rounded, 'Vehicle Categories', 'Create and manage vehicle categories for the catalog', AppRoutes.adminCategories),
+            const SizedBox(height: 16),
+            _buildActionTile(context, Icons.settings_rounded, 'Settings', 'Update business info, hours, and contact details', AppRoutes.adminSettings),
             const SizedBox(height: 40),
           ],
         ),
@@ -86,18 +89,22 @@ class AdminDashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildStatGrid(Map<String, dynamic> stats) {
+    final codOutstanding = (stats['codOutstanding'] as double?) ?? 0.0;
+    final codCount       = (stats['codPendingCount'] as int?) ?? 0;
+
     return GridView.count(
       crossAxisCount: 2,
       crossAxisSpacing: 16,
       mainAxisSpacing: 16,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.1,
+      childAspectRatio: 1.3,
       children: [
         _buildGradientStatCard('Total Revenue', '₹${stats['revenue'] ?? 0}', [Colors.orange.shade800, Colors.deepOrange.shade600], Icons.account_balance_wallet_rounded),
         _buildGradientStatCard('Pending Bookings', '${stats['pendingBookings'] ?? 0}', [Colors.blue.shade800, Colors.blue.shade600], Icons.pending_actions_rounded),
         _buildGradientStatCard('Active Jobs', '${stats['activeRetreads'] ?? 0}', [Colors.green.shade800, Colors.green.shade600], Icons.engineering_rounded),
         _buildGradientStatCard('Low Stock Alerts', '${stats['lowStock'] ?? 0}', [const Color(0xFFC62828), AppColors.mrfRed], Icons.warning_rounded),
+        _buildGradientStatCard('COD Due', '₹${codOutstanding.toStringAsFixed(0)}\n$codCount orders', [Colors.amber.shade800, Colors.amber.shade600], Icons.payments_rounded),
       ],
     );
   }
@@ -126,7 +133,7 @@ class AdminDashboardScreen extends ConsumerWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(value, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
+              Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
               const SizedBox(height: 4),
               Text(title, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
             ],

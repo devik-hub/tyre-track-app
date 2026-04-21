@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../app/routes/app_routes.dart';
 import '../../../domain/providers/product_provider.dart';
 import '../../../domain/providers/vehicle_category_provider.dart';
 import '../../../data/models/product_model.dart';
@@ -23,9 +24,10 @@ class _TyreCatalogScreenState extends ConsumerState<TyreCatalogScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => context.go(AppRoutes.home)),
         title: const Text('Buy Tyres'),
         actions: [
-          IconButton(icon: const Icon(Icons.shopping_cart), onPressed: () => context.push('/cart')),
+          IconButton(icon: const Icon(Icons.shopping_cart), onPressed: () => context.push(AppRoutes.cart)),
         ],
       ),
       body: Column(

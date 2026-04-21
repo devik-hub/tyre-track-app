@@ -36,18 +36,18 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.directions_car,
-              size: 100,
-              color: Colors.blue,
+            Image.asset(
+              'assets/images/logo.png',
+              height: 100,
+              width: 100,
             ),
-            SizedBox(height: 20),
-            Text(
+            const SizedBox(height: 20),
+            const Text(
               'Tyre Track',
               style: TextStyle(
                 fontSize: 32,
@@ -55,8 +55,8 @@ class _SplashScreenState extends State<SplashScreen> {
                 color: Colors.blue,
               ),
             ),
-            SizedBox(height: 20),
-            CircularProgressIndicator(),
+            const SizedBox(height: 20),
+            const CircularProgressIndicator(),
           ],
         ),
       ),

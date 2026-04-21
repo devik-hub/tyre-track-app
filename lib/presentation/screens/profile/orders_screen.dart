@@ -41,7 +41,7 @@ class OrdersScreen extends ConsumerWidget {
             itemCount: orders.length,
             itemBuilder: (context, index) {
               final order = orders[index];
-              final statusColor = _getStatusColor(order.status);
+              final statusColor = _getStatusColor(order.orderStatus);
               return Card(
                 margin: const EdgeInsets.only(bottom: 16),
                 child: Padding(
@@ -52,49 +52,76 @@ class OrdersScreen extends ConsumerWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Order #${order.orderId.substring(0, 6).toUpperCase()}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text('Order #${order.orderId.substring(0, 6).toUpperCase()}',
+                              style: const TextStyle(fontWeight: FontWeight.bold)),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(color: statusColor.withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
-                            child: Text(order.status.toUpperCase(), style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.bold)),
+                            decoration: BoxDecoration(
+                                color: statusColor.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8)),
+                            child: Text(
+                              order.orderStatus.replaceAll('_', ' ').toUpperCase(),
+                              style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.bold),
+                            ),
                           ),
                         ],
                       ),
                       const Divider(height: 24),
                       ...order.items.map((item) => Padding(
                         padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.tire_repair, size: 16, color: Colors.grey),
-                            const SizedBox(width: 8),
-                            Expanded(child: Text('${item.name} x${item.quantity}', style: const TextStyle(fontSize: 13))),
-                            Text('₹${item.price.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                          ],
-                        ),
+                        child: Row(children: [
+                          const Icon(Icons.tire_repair, size: 16, color: Colors.grey),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '${item.productName.isNotEmpty ? item.productName : 'Item'} ×${item.quantity}',
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                          ),
+                          Text(
+                            '₹${item.totalPriceRupees.toStringAsFixed(0)}',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ]),
                       )),
                       const Divider(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('${order.createdAt.day}/${order.createdAt.month}/${order.createdAt.year}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                          Text('Total: ₹${order.totalAmount.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.mrfRed, fontSize: 16)),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Text('Payment: ', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: order.paymentStatus == 'paid' ? Colors.green.shade100 : Colors.orange.shade100,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(order.paymentStatus.toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold,
-                                color: order.paymentStatus == 'paid' ? Colors.green : Colors.orange)),
+                          Text(
+                            '${order.createdAt.day}/${order.createdAt.month}/${order.createdAt.year}',
+                            style: const TextStyle(color: Colors.grey, fontSize: 12),
+                          ),
+                          Text(
+                            'Total: ₹${order.finalAmountRupees.toStringAsFixed(0)}',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, color: AppColors.mrfRed, fontSize: 16),
                           ),
                         ],
                       ),
+                      const SizedBox(height: 8),
+                      Row(children: [
+                        Text('Payment: ', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: order.paymentStatus == 'paid' || order.paymentStatus == 'collected'
+                                ? Colors.green.shade100
+                                : Colors.orange.shade100,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            order.paymentStatus.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: order.paymentStatus == 'paid' || order.paymentStatus == 'collected'
+                                  ? Colors.green
+                                  : Colors.orange,
+                            ),
+                          ),
+                        ),
+                      ]),
                     ],
                   ),
                 ),
@@ -108,12 +135,13 @@ class OrdersScreen extends ConsumerWidget {
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'pending': return Colors.orange;
-      case 'processing': return Colors.blue;
-      case 'shipped': return Colors.purple;
-      case 'delivered': return Colors.green;
-      case 'cancelled': return Colors.red;
-      default: return Colors.grey;
+      case 'pending_confirmation': return Colors.orange;
+      case 'confirmed':            return Colors.blue;
+      case 'processing':           return Colors.purple;
+      case 'shipped':              return Colors.indigo;
+      case 'delivered':            return Colors.green;
+      case 'cancelled':            return Colors.red;
+      default:                     return Colors.grey;
     }
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../app/routes/app_routes.dart';
 import '../../../domain/providers/service_availability_provider.dart';
 
 class ServicesHomeScreen extends ConsumerWidget {
@@ -40,16 +42,9 @@ class ServicesHomeScreen extends ConsumerWidget {
                     leading: CircleAvatar(
                       backgroundColor: (isAvailable ? AppColors.mrfRed : Colors.grey).withOpacity(0.1),
                       radius: 30,
-                      child: Icon(
-                        service['icon'] as IconData,
-                        color: isAvailable ? AppColors.mrfRed : Colors.grey,
-                        size: 30,
-                      ),
+                      child: Icon(service['icon'] as IconData, color: isAvailable ? AppColors.mrfRed : Colors.grey, size: 30),
                     ),
-                    title: Text(
-                      service['title'] as String,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                    ),
+                    title: Text(service['title'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                     subtitle: Padding(
                       padding: const EdgeInsets.only(top: 8.0),
                       child: Column(
@@ -65,14 +60,7 @@ class ServicesHomeScreen extends ConsumerWidget {
                                 borderRadius: BorderRadius.circular(4),
                                 border: Border.all(color: Colors.orange.shade200),
                               ),
-                              child: const Text(
-                                '⚠ Not Available Today',
-                                style: TextStyle(
-                                  color: Colors.deepOrange,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                              child: const Text('⚠ Not Available Today', style: TextStyle(color: Colors.deepOrange, fontSize: 12, fontWeight: FontWeight.bold)),
                             ),
                           ],
                         ],
