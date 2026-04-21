@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../app/routes/app_routes.dart';
 import '../../../domain/providers/auth_provider.dart';
 import '../../../domain/providers/product_provider.dart';
+import 'product_search_delegate.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -21,8 +23,11 @@ class HomeScreen extends ConsumerWidget {
         ),
         title: const Text('Jagadale Retreads'),
         actions: [
-          IconButton(icon: const Icon(Icons.search), onPressed: () => context.go('/tyres')),
-          IconButton(icon: const Icon(Icons.notifications_none), onPressed: () => context.push('/notifications')),
+          IconButton(
+            icon: const Icon(Icons.search), 
+            onPressed: () => showSearch(context: context, delegate: ProductSearchDelegate(ref))
+          ),
+          IconButton(icon: const Icon(Icons.notifications_none), onPressed: () => context.push(AppRoutes.notifications)),
         ],
       ),
       body: SingleChildScrollView(
@@ -35,6 +40,8 @@ class HomeScreen extends ConsumerWidget {
             _buildServicesSection(context),
             const SizedBox(height: 16),
             _buildFeaturedTyres(context, ref),
+            const SizedBox(height: 16),
+            _buildFeaturedCasings(context, ref),
             const SizedBox(height: 24),
             _buildCompanyQuickLinks(context),
             const SizedBox(height: 24),
@@ -80,10 +87,10 @@ class HomeScreen extends ConsumerWidget {
         mainAxisSpacing: 16,
         childAspectRatio: 2.5,
         children: [
-          _buildActionCard(context, 'Buy New Tyre', Icons.shopping_bag, () => context.go('/tyres')),
-          _buildActionCard(context, 'Book Service', Icons.build, () => context.go('/services')),
-          _buildActionCard(context, 'My Vehicles', Icons.directions_car, () => context.go('/vehicles')),
-          _buildActionCard(context, 'Track Order', Icons.local_shipping, () => context.push('/orders')),
+          _buildActionCard(context, 'Buy New Tyre', Icons.shopping_bag, () => context.go(AppRoutes.tyres)),
+          _buildActionCard(context, 'Book Service', Icons.build, () => context.go(AppRoutes.services)),
+          _buildActionCard(context, 'Buy Casing', Icons.circle, () => context.go(AppRoutes.casings)),
+          _buildActionCard(context, 'Track Order', Icons.local_shipping, () => context.push(AppRoutes.orders)),
         ],
       ),
     );
@@ -127,7 +134,7 @@ class HomeScreen extends ConsumerWidget {
               itemCount: services.length,
               itemBuilder: (context, index) {
                 return InkWell(
-                  onTap: () => context.go('/services'),
+                  onTap: () => context.go(AppRoutes.services),
                   child: Container(
                     width: 100,
                     margin: const EdgeInsets.only(right: 12),
@@ -163,7 +170,7 @@ class HomeScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('Featured MRF Tyres', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              TextButton(onPressed: () => context.go('/tyres'), child: const Text('Shop All →', style: TextStyle(color: AppColors.mrfRed))),
+              TextButton(onPressed: () => context.go(AppRoutes.tyres), child: const Text('Shop All →', style: TextStyle(color: AppColors.mrfRed))),
             ],
           ),
           SizedBox(
@@ -172,58 +179,96 @@ class HomeScreen extends ConsumerWidget {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(child: Text('Unable to load products', style: TextStyle(color: Colors.grey.shade500))),
               data: (products) {
-                if (products.isEmpty) {
-                  return const Center(child: Text('No products yet. Admin can add from dashboard.', style: TextStyle(color: Colors.grey)));
+                final featured = products.where((p) => p.category != 'casing' && p.isFeatured).toList();
+                final display = featured.isNotEmpty ? featured : products.where((p) => p.category != 'casing').take(5).toList();
+                if (display.isEmpty) {
+                  return const Center(child: Text('No products yet.', style: TextStyle(color: Colors.grey)));
                 }
-                final featured = products.take(5).toList();
-                return ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: featured.length,
-                  itemBuilder: (context, index) {
-                    final p = featured[index];
-                    return InkWell(
-                      onTap: () => context.push('/tyre_detail', extra: p.productId),
-                      child: Container(
-                        width: 160,
-                        margin: const EdgeInsets.only(right: 12),
-                        child: Card(
-                          clipBehavior: Clip.antiAlias,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                height: 100,
-                                color: Colors.grey[200],
-                                child: Center(
-                                  child: p.imageUrls.isNotEmpty
-                                      ? Image.network(p.imageUrls.first, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.tire_repair, size: 40, color: Colors.grey))
-                                      : const Icon(Icons.tire_repair, size: 40, color: Colors.grey),
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                    Text('${p.brand} • ${p.size}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                                    const SizedBox(height: 4),
-                                    Text('₹${p.price.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.mrfRed)),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                );
+                return _buildProductRow(context, display);
               },
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFeaturedCasings(BuildContext context, WidgetRef ref) {
+    final casingsAsync = ref.watch(featuredCasingsProvider);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Featured Casings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              TextButton(onPressed: () => context.go(AppRoutes.casings), child: const Text('Shop All →', style: TextStyle(color: AppColors.mrfRed))),
+            ],
+          ),
+          SizedBox(
+            height: 200,
+            child: casingsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => const SizedBox.shrink(),
+              data: (casings) {
+                if (casings.isEmpty) {
+                  return Center(child: Text('No featured casings yet.', style: TextStyle(color: Colors.grey.shade400)));
+                }
+                return _buildProductRow(context, casings);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductRow(BuildContext context, List products) {
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      itemCount: products.length,
+      itemBuilder: (context, index) {
+        final p = products[index];
+        return InkWell(
+          onTap: () => context.push(AppRoutes.tyreDetail, extra: p.productId),
+          child: Container(
+            width: 160,
+            margin: const EdgeInsets.only(right: 12),
+            child: Card(
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 100,
+                    color: Colors.grey[200],
+                    child: Center(
+                      child: p.imageUrls.isNotEmpty
+                          ? Image.network(p.imageUrls.first, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.tire_repair, size: 40, color: Colors.grey))
+                          : const Icon(Icons.tire_repair, size: 40, color: Colors.grey),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text('${p.brand} • ${p.size}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                        const SizedBox(height: 4),
+                        Text('₹${p.price.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.mrfRed)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -238,10 +283,10 @@ class HomeScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildMiniAction(context, Icons.info_outline, 'About Us', () => context.push('/about')),
-              _buildMiniAction(context, Icons.photo_library_outlined, 'Gallery', () => context.push('/gallery')),
-              _buildMiniAction(context, Icons.phone_outlined, 'Contact', () => context.push('/contact')),
-              _buildMiniAction(context, Icons.inventory_2_outlined, 'Products', () => context.push('/legacy-products')),
+              _buildMiniAction(context, Icons.info_outline, 'About Us', () => context.push(AppRoutes.about)),
+              _buildMiniAction(context, Icons.photo_library_outlined, 'Gallery', () => context.push(AppRoutes.gallery)),
+              _buildMiniAction(context, Icons.phone_outlined, 'Contact', () => context.push(AppRoutes.contact)),
+              _buildMiniAction(context, Icons.inventory_2_outlined, 'Products', () => context.push(AppRoutes.legacyProducts)),
             ],
           ),
         ],

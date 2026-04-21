@@ -5,16 +5,17 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../domain/providers/product_provider.dart';
 import '../../../data/models/product_model.dart';
+import '../home/product_search_delegate.dart';
 
-class TyreCatalogScreen extends ConsumerStatefulWidget {
-  const TyreCatalogScreen({super.key});
+class CasingCatalogScreen extends ConsumerStatefulWidget {
+  const CasingCatalogScreen({super.key});
 
   @override
-  ConsumerState<TyreCatalogScreen> createState() => _TyreCatalogScreenState();
+  ConsumerState<CasingCatalogScreen> createState() => _CasingCatalogScreenState();
 }
 
-class _TyreCatalogScreenState extends ConsumerState<TyreCatalogScreen> {
-  final List<String> categories = ['All', '2-Wheeler', 'Car', 'LCV', 'Truck/Bus'];
+class _CasingCatalogScreenState extends ConsumerState<CasingCatalogScreen> {
+  final List<String> categories = ['All', 'Truck', 'Bus', 'LCV', 'Tractor'];
   int _selectedCategoryIndex = 0;
 
   @override
@@ -24,7 +25,7 @@ class _TyreCatalogScreenState extends ConsumerState<TyreCatalogScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => context.go(AppRoutes.home)),
-        title: const Text('Buy Tyres'),
+        title: const Text('Buy Casings'),
         actions: [
           IconButton(icon: const Icon(Icons.shopping_cart), onPressed: () => context.push(AppRoutes.cart)),
         ],
@@ -33,12 +34,19 @@ class _TyreCatalogScreenState extends ConsumerState<TyreCatalogScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search by size, model, vehicle type...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: const Icon(Icons.filter_list),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            child: InkWell(
+              onTap: () {
+                showSearch(context: context, delegate: ProductSearchDelegate(ref));
+              },
+              child: IgnorePointer(
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search casings...',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: const Icon(Icons.filter_list),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
               ),
             ),
           ),
@@ -67,15 +75,17 @@ class _TyreCatalogScreenState extends ConsumerState<TyreCatalogScreen> {
           Expanded(
             child: productState.when(
                data: (products) {
-                  // Basic filtering mapping 
-                  List<ProductModel> filtered = products;
+                  // Filter strictly for Casing items (if backend schema eventually uses category=casing, we can mock it by matching naming)
+                  // For now, we assume Casings are products containing "Casing" or "Remould" in their name, or category == 'casing'.
+                  List<ProductModel> filtered = products.where((p) => p.category.toLowerCase().contains('casing') || p.name.toLowerCase().contains('casing')).toList();
+                  
                   if (_selectedCategoryIndex != 0) {
                      String mappedCategory = categories[_selectedCategoryIndex].toLowerCase();
-                     filtered = products.where((p) => p.category.toLowerCase() == mappedCategory).toList();
+                     filtered = filtered.where((p) => p.category.toLowerCase().contains(mappedCategory)).toList();
                   }
 
                   if (filtered.isEmpty) {
-                     return const Center(child: Text('No tyres found in this category.'));
+                     return const Center(child: Text('No casings found in this category.'));
                   }
 
                   return GridView.builder(
@@ -93,7 +103,7 @@ class _TyreCatalogScreenState extends ConsumerState<TyreCatalogScreen> {
                   );
                },
                loading: () => const Center(child: CircularProgressIndicator(color: AppColors.mrfRed)),
-               error: (e, s) => Center(child: Text('Failed to load products: $e')),
+               error: (e, s) => Center(child: Text('Failed to load casings: $e')),
             )
           ),
         ],
@@ -103,7 +113,7 @@ class _TyreCatalogScreenState extends ConsumerState<TyreCatalogScreen> {
 
   Widget _buildProductCard(BuildContext context, ProductModel product) {
     return InkWell(
-      onTap: () => context.push('/tyre_detail', extra: product.productId),
+      onTap: () => context.push(AppRoutes.tyreDetail, extra: product.productId),
       child: Card(
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -114,13 +124,13 @@ class _TyreCatalogScreenState extends ConsumerState<TyreCatalogScreen> {
               color: Colors.grey[200],
               child: Stack(
                 children: [
-                  const Center(child: Icon(Icons.tire_repair, size: 60, color: Colors.grey)),
+                  const Center(child: Icon(Icons.circle_outlined, size: 60, color: Colors.grey)), // distinct icon
                   Positioned(
                     top: 8, left: 8,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      color: AppColors.mrfRed,
-                      child: const Text('MRF', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                      color: AppColors.mrfBlack,
+                      child: const Text('CASING', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                     ),
                   )
                 ],
@@ -132,7 +142,7 @@ class _TyreCatalogScreenState extends ConsumerState<TyreCatalogScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
                 Text(product.size, style: const TextStyle(fontSize: 12, color: Colors.grey)),
                 const SizedBox(height: 8),
                 Row(
@@ -142,15 +152,7 @@ class _TyreCatalogScreenState extends ConsumerState<TyreCatalogScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('₹${product.discountedPrice ?? product.price}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.mrfRed, fontSize: 14)),
-                        if (product.discountedPrice != null) 
-                           Text('₹${product.price}', style: const TextStyle(fontSize: 10, decoration: TextDecoration.lineThrough, color: Colors.grey)),
                       ],
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add_shopping_cart, color: AppColors.mrfRed),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () {}, // Handled deeper inside detail view usually
                     ),
                   ],
                 ),

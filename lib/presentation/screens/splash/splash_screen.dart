@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../app/routes/app_routes.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/providers/auth_provider.dart';
@@ -47,14 +48,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
      if (authState.userModel != null) {
         final user = authState.userModel!;
         if (user.phone.isEmpty && user.uid != 'dev_mock_id_customer' && user.uid != 'dev_mock_id_admin') {
-           context.go('/register');
+           context.go(AppRoutes.register);
         } else if (user.role == 'admin') {
-           context.go('/admin');
+           context.go(AppRoutes.admin);
         } else {
-           context.go('/home');
+           context.go(AppRoutes.home);
         }
      } else {
-        context.go('/login');
+        context.go(AppRoutes.login);
      }
   }
 

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../app/routes/app_routes.dart';
+import '../../../domain/providers/business_info_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class HelpSupportScreen extends StatelessWidget {
+class HelpSupportScreen extends ConsumerWidget {
   const HelpSupportScreen({super.key});
 
   Future<void> _launchUrl(String urlString) async {
@@ -13,42 +16,57 @@ class HelpSupportScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final infoAsync = ref.watch(businessInfoProvider);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Help & Support')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-             const Text('How can we help you today?', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-             const SizedBox(height: 24),
-             _buildContactCard(
-               icon: Icons.phone,
-               title: 'Call Us Now',
-               subtitle: '+91 98222 89488',
-               onTap: () => _launchUrl('tel:+919822289488'),
-             ),
-             const SizedBox(height: 16),
-             _buildContactCard(
-               icon: Icons.email,
-               title: 'Email Us',
-               subtitle: 'jagadaleretrads@gmail.com',
-               onTap: () => _launchUrl('mailto:jagadaleretrads@gmail.com'),
-             ),
-             const SizedBox(height: 16),
-             _buildContactCard(
-               icon: Icons.location_on,
-               title: 'Visit our Workshop',
-               subtitle: 'Near Khed Shivapur Toll Plaza, Pune-Satara Highway',
-               onTap: () => _launchUrl('https://maps.google.com/?q=Jagadale+Retreads'),
-             ),
-             const Divider(height: 48),
-             const Text('Frequently Asked Questions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-             const SizedBox(height: 16),
-             _buildFAQ('What is your retreading warranty?', 'We offer a standard 2-year warranty on all retreading services.'),
-             _buildFAQ('How long does a service take?', 'Standard retreading takes 24-48 hours depending on queue.'),
-          ],
+      body: infoAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.mrfRed)),
+        error: (e, _) => Center(child: Text('Error: $e')),
+        data: (info) => SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('How can we help you today?', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 24),
+              _buildContactCard(
+                icon: Icons.phone,
+                title: 'Call Us Now',
+                subtitle: info.phone,
+                onTap: () => _launchUrl('tel:${info.phone}'),
+              ),
+              const SizedBox(height: 16),
+              _buildContactCard(
+                icon: Icons.email,
+                title: 'Email Us',
+                subtitle: info.email,
+                onTap: () => _launchUrl('mailto:${info.email}'),
+              ),
+              const SizedBox(height: 16),
+              _buildContactCard(
+                icon: Icons.location_on,
+                title: 'Visit our Workshop',
+                subtitle: info.address,
+                onTap: () => _launchUrl(info.googleMapsUrl),
+              ),
+              if (info.whatsapp.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                _buildContactCard(
+                  icon: Icons.message,
+                  title: 'WhatsApp',
+                  subtitle: info.whatsapp,
+                  onTap: () => _launchUrl('https://wa.me/${info.whatsapp.replaceAll('+', '')}'),
+                ),
+              ],
+              const Divider(height: 48),
+              const Text('Frequently Asked Questions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              _buildFAQ('What is your retreading warranty?', 'We offer a standard 2-year warranty on all retreading services.'),
+              _buildFAQ('How long does a service take?', 'Standard retreading takes 24-48 hours depending on queue.'),
+            ],
+          ),
         ),
       ),
     );

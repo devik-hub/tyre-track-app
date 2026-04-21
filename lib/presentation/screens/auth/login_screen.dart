@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../domain/providers/auth_provider.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../app/routes/app_routes.dart';
 import '../../../core/constants/app_constants.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -25,7 +26,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (phone.length < 10) return;
     final formattedPhone = phone.startsWith('+91') ? phone : '+91$phone';
     await ref.read(authProvider.notifier).sendOtp(formattedPhone, (verificationId) {
-      context.push('/otp', extra: verificationId);
+      context.push(AppRoutes.otp, extra: verificationId);
     });
   }
 
@@ -50,11 +51,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         final user = next.userModel!;
         // If phone is missing (Google/Email user), complete profile first
         if (user.phone.isEmpty && user.uid != 'dev_mock_id_customer' && user.uid != 'dev_mock_id_admin') {
-          context.go('/register');
+          context.go(AppRoutes.register);
         } else if (user.role == 'admin') {
-          context.go('/admin');
+          context.go(AppRoutes.admin);
         } else {
-          context.go('/home');
+          context.go(AppRoutes.home);
         }
       }
     });
@@ -195,7 +196,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton(
-                  onPressed: authState.isLoading ? null : _sendOtp,
+                  onPressed: () {
+                    if (authState.isLoading) return;
+                    _sendOtp();
+                  },
                   style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
                   child: authState.isLoading
                       ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
@@ -230,7 +234,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton(
-                  onPressed: authState.isLoading ? null : _signInEmail,
+                  onPressed: () {
+                    if (authState.isLoading) return;
+                    _signInEmail();
+                  },
                   style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
                   child: authState.isLoading
                       ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
@@ -238,7 +245,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 TextButton(
-                  onPressed: () => context.push('/register'),
+                  onPressed: () => context.push(AppRoutes.register),
                   child: const Text("Don't have an account? Register", style: TextStyle(color: AppColors.mrfRed, fontSize: 13)),
                 ),
               ],
@@ -256,14 +263,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       TextButton(
                         onPressed: () async {
                           await ref.read(authProvider.notifier).developerBypass('customer');
-                          if (context.mounted) context.go('/home');
+                          if (context.mounted) context.go(AppRoutes.home);
                         },
                         child: const Text('Customer', style: TextStyle(fontSize: 12)),
                       ),
                       TextButton(
                         onPressed: () async {
                           await ref.read(authProvider.notifier).developerBypass('admin');
-                          if (context.mounted) context.go('/admin');
+                          if (context.mounted) context.go(AppRoutes.admin);
                         },
                         child: const Text('Admin', style: TextStyle(fontSize: 12)),
                       ),

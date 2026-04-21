@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../app/routes/app_routes.dart';
 import 'dart:math';
 
 class ServicesHomeScreen extends StatelessWidget {
@@ -17,7 +19,10 @@ class ServicesHomeScreen extends StatelessWidget {
     ];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Services')),
+      appBar: AppBar(
+        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => context.go(AppRoutes.home)),
+        title: const Text('Services'),
+      ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: services.length,

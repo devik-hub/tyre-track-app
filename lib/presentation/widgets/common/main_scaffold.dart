@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../app/routes/app_routes.dart';
 
 class MainScaffold extends StatefulWidget {
   final Widget child;
@@ -16,11 +17,11 @@ class _MainScaffoldState extends State<MainScaffold> {
   void _onTap(int index) {
     setState(() => _currentIndex = index);
     switch (index) {
-      case 0: context.go('/home'); break;
-      case 1: context.go('/tyres'); break;
-      case 2: context.go('/services'); break;
-      case 3: context.go('/vehicles'); break;
-      case 4: context.go('/account'); break;
+      case 0: context.go(AppRoutes.home); break;
+      case 1: context.go(AppRoutes.tyres); break;
+      case 2: context.go(AppRoutes.services); break;
+      case 3: context.go(AppRoutes.casings); break;
+      case 4: context.go(AppRoutes.account); break;
     }
   }
 
@@ -45,7 +46,7 @@ class _MainScaffoldState extends State<MainScaffold> {
             _buildNavItem(Icons.home_outlined, Icons.home, 'Home', 0),
             _buildNavItem(Icons.shopping_bag_outlined, Icons.shopping_bag, 'Buy Tires', 1),
             const SizedBox(width: 48), // Gap for FAB
-            _buildNavItem(Icons.directions_car_outlined, Icons.directions_car, 'Vehicles', 3),
+            _buildNavItem(Icons.circle_outlined, Icons.circle, 'Buy Casing', 3),
             _buildNavItem(Icons.person_outline, Icons.person, 'Account', 4),
           ],
         ),

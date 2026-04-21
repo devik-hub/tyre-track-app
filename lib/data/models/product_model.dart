@@ -18,6 +18,12 @@ class ProductModel {
   final bool isFeatured;
   final DateTime createdAt;
 
+  // ─── Casing-specific fields ───
+  final String? casingCondition;       // "Grade A" | "Grade B" | "Grade C"
+  final String? casingSource;          // "In-House" | "Customer Return" | "Purchased"
+  final int? maxRetreadCycles;         // 1 | 2 | 3
+  final List<String> compatibleTyreSizes;
+
   ProductModel({
     required this.productId,
     required this.name,
@@ -35,49 +41,59 @@ class ProductModel {
     this.isActive = true,
     this.isFeatured = false,
     required this.createdAt,
+    this.casingCondition,
+    this.casingSource,
+    this.maxRetreadCycles,
+    this.compatibleTyreSizes = const [],
   });
 
   factory ProductModel.fromMap(Map<String, dynamic> data, String documentId) {
     return ProductModel(
-      productId: documentId,
-      name: data['name'] ?? '',
-      brand: data['brand'] ?? 'MRF',
-      category: data['category'] ?? 'car',
-      size: data['size'] ?? '',
-      loadIndex: data['loadIndex'] ?? 0,
-      speedRating: data['speedRating'] ?? '',
+      productId:    documentId,
+      name:         data['name'] ?? '',
+      brand:        data['brand'] ?? 'MRF',
+      category:     data['category'] ?? 'car',
+      size:         data['size'] ?? '',
+      loadIndex:    data['loadIndex'] ?? 0,
+      speedRating:  data['speedRating'] ?? '',
       treadPattern: data['treadPattern'] ?? '',
-      price: (data['price'] ?? 0.0).toDouble(),
+      price:        (data['price'] ?? 0.0).toDouble(),
       discountedPrice: data['discountedPrice'] != null ? (data['discountedPrice'] as num).toDouble() : null,
       stockQuantity: data['stockQuantity'] ?? 0,
-      imageUrls: List<String>.from(data['imageUrls'] ?? []),
+      imageUrls:     List<String>.from(data['imageUrls'] ?? []),
       specifications: Map<String, String>.from(data['specifications'] ?? {}),
-      isActive: data['isActive'] ?? true,
-      isFeatured: data['isFeatured'] ?? false,
-      createdAt: _parseDate(data['createdAt']),
+      isActive:      data['isActive'] ?? true,
+      isFeatured:    data['isFeatured'] ?? false,
+      createdAt:     _parseDate(data['createdAt']),
+      casingCondition: data['casingCondition'] as String?,
+      casingSource:    data['casingSource'] as String?,
+      maxRetreadCycles: data['maxRetreadCycles'] as int?,
+      compatibleTyreSizes: List<String>.from(data['compatibleTyreSizes'] ?? []),
     );
   }
 
-  Map<String, dynamic> toMap() {
-    return {
-      'productId': productId,
-      'name': name,
-      'brand': brand,
-      'category': category,
-      'size': size,
-      'loadIndex': loadIndex,
-      'speedRating': speedRating,
-      'treadPattern': treadPattern,
-      'price': price,
-      'discountedPrice': discountedPrice,
-      'stockQuantity': stockQuantity,
-      'imageUrls': imageUrls,
-      'specifications': specifications,
-      'isActive': isActive,
-      'isFeatured': isFeatured,
-      'createdAt': Timestamp.fromDate(createdAt),
-    };
-  }
+  Map<String, dynamic> toMap() => {
+    'productId':    productId,
+    'name':         name,
+    'brand':        brand,
+    'category':     category,
+    'size':         size,
+    'loadIndex':    loadIndex,
+    'speedRating':  speedRating,
+    'treadPattern': treadPattern,
+    'price':        price,
+    'discountedPrice': discountedPrice,
+    'stockQuantity': stockQuantity,
+    'imageUrls':    imageUrls,
+    'specifications': specifications,
+    'isActive':     isActive,
+    'isFeatured':   isFeatured,
+    'createdAt':    Timestamp.fromDate(createdAt),
+    'casingCondition': casingCondition,
+    'casingSource':    casingSource,
+    'maxRetreadCycles': maxRetreadCycles,
+    'compatibleTyreSizes': compatibleTyreSizes,
+  };
 
   static DateTime _parseDate(dynamic v) {
     if (v == null) return DateTime.now();

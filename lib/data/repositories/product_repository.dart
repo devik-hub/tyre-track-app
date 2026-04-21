@@ -10,12 +10,31 @@ class ProductRepository {
 
   CollectionReference get _col => _firestore.collection(FirebaseConstants.productsCollection);
 
-  // ─── Real-Time Stream ───
+  // ─── Real-Time Stream (all) ───
   Stream<List<ProductModel>> streamProducts() {
     return _col.orderBy('createdAt', descending: true).snapshots().map(
       (snap) => snap.docs.map((doc) => ProductModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList(),
     );
   }
+
+  // ─── Real-Time Stream by category ───
+  Stream<List<ProductModel>> streamProductsByCategory(String category) {
+    return _col
+        .where('category', isEqualTo: category)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs.map((doc) => ProductModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList());
+  }
+
+  // ─── Real-Time Stream of featured casings ───
+  Stream<List<ProductModel>> streamFeaturedCasings() {
+    return _col
+        .where('category', isEqualTo: 'casing')
+        .where('isFeatured', isEqualTo: true)
+        .snapshots()
+        .map((snap) => snap.docs.map((doc) => ProductModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList());
+  }
+
 
   // ─── One-time fetch ───
   Future<List<ProductModel>> getProducts() async {

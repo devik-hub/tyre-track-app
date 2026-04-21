@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../app/routes/app_routes.dart';
 
 class AdminScaffold extends StatefulWidget {
   final Widget child;
@@ -16,10 +17,11 @@ class _AdminScaffoldState extends State<AdminScaffold> {
   void _onTap(int index) {
     setState(() => _currentIndex = index);
     switch (index) {
-      case 0: context.go('/admin'); break;
-      case 1: context.go('/admin/inventory'); break;
-      case 2: context.go('/admin/bookings'); break;
-      case 3: context.go('/admin/orders'); break;
+      case 0: context.go(AppRoutes.admin); break;
+      case 1: context.go(AppRoutes.adminInventory); break;
+      case 2: context.go(AppRoutes.adminBookings); break;
+      case 3: context.go(AppRoutes.adminOrders); break;
+      case 4: context.go(AppRoutes.adminSettings); break;
     }
   }
 
@@ -46,8 +48,8 @@ class _AdminScaffoldState extends State<AdminScaffold> {
           unselectedItemColor: Colors.grey.shade500,
           type: BottomNavigationBarType.fixed,
           showUnselectedLabels: true,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 11),
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 10),
           elevation: 0,
           items: const [
             BottomNavigationBarItem(
@@ -65,6 +67,10 @@ class _AdminScaffoldState extends State<AdminScaffold> {
             BottomNavigationBarItem(
               icon: Padding(padding: EdgeInsets.only(bottom: 4), child: Icon(Icons.receipt_long_rounded)),
               label: 'Orders',
+            ),
+            BottomNavigationBarItem(
+              icon: Padding(padding: EdgeInsets.only(bottom: 4), child: Icon(Icons.settings_rounded)),
+              label: 'Settings',
             ),
           ],
         ),
