@@ -151,17 +151,5 @@ class AuthNotifier extends StateNotifier<AuthState> {
     await _authRepo.signOut();
   }
 
-  // Dev bypass for testing
-  Future<void> developerBypass(String role) async {
-    state = state.copyWith(isLoading: true, clearError: true);
-    await Future.delayed(const Duration(seconds: 1));
-    final dummyUser = UserModel(
-      uid: 'dev_mock_id_$role',
-      name: 'Developer Testing',
-      phone: '+919999999999',
-      role: role,
-      createdAt: DateTime.now(),
-    );
-    state = state.copyWith(isLoading: false, userModel: dummyUser);
-  }
+
 }

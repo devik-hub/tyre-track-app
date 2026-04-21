@@ -93,7 +93,13 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
     });
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Admin Login')),
+      appBar: AppBar(
+        title: const Text('Admin Login'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),

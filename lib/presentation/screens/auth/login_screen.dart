@@ -19,14 +19,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _showEmailForm = false;
   bool _isPasswordVisible = false;
 
+  bool _isValidEmail(String email) =>
+      RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
+
+  String? _validatePassword(String password) {
+    if (password.length < 8) return 'Password must be at least 8 characters';
+    if (!password.contains(RegExp(r'[A-Z]'))) return 'Add at least 1 uppercase letter';
+    if (!password.contains(RegExp(r'[a-z]'))) return 'Add at least 1 lowercase letter';
+    if (!password.contains(RegExp(r'[0-9]'))) return 'Add at least 1 number';
+    if (!password.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>]'))) {
+      return 'Add at least 1 special character';
+    }
+    return null;
+  }
+
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   Future<void> _sendOtp() async {
     final phone = _phoneController.text.trim();
     // Strip leading +91 if user typed it, then check we have 10 digits
     final digits = phone.replaceAll(RegExp(r'^\+91'), '').replaceAll(RegExp(r'\s'), '');
     if (digits.length != 10 || !RegExp(r'^[0-9]{10}$').hasMatch(digits)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter a valid 10-digit mobile number')),
-      );
+      _showSnack('Enter a valid 10-digit mobile number');
       return;
     }
     final formattedPhone = '+91$digits';
@@ -37,20 +53,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _signInEmail() async {
     final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-    // Validate before hitting Firebase
-    if (email.isEmpty || !email.contains('@') || !email.contains('.')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter a valid email address')),
-      );
+    final password = _passwordController.text;
+    
+    // Strict Client-side validation
+    if (!_isValidEmail(email)) {
+      _showSnack('Enter a valid email address');
       return;
     }
-    if (password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter your password')),
-      );
+    
+    final pwError = _validatePassword(password);
+    if (pwError != null) {
+      _showSnack(pwError);
       return;
     }
+
     await ref.read(authProvider.notifier).signInWithEmail(email, password);
   }
 
@@ -84,6 +100,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
