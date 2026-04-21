@@ -70,26 +70,17 @@ final codOutstandingTotalProvider = StreamProvider<double>((ref) {
       });
 });
 
-/// Convenience: resolves the correct provider based on orderFilterProvider state
-/// Use this in the admin orders tab to get the active list
-final activeOrdersProvider = StreamProvider<List<OrderModel>>((ref) {
+/// Convenience: resolves the correct provider based on orderFilterProvider state.
+/// Returns AsyncValue directly — no nested streams.
+final activeOrdersProvider = Provider<AsyncValue<List<OrderModel>>>((ref) {
   final filter = ref.watch(orderFilterProvider);
   switch (filter) {
     case 'cod_pending':
-      return ref.watch(codPendingOrdersProvider.stream).handleError((e) {
-        print('❌ activeOrdersProvider cod_pending error: $e');
-        return <OrderModel>[];
-      });
+      return ref.watch(codPendingOrdersProvider);
     case 'all':
-      return ref.watch(allOrdersStreamProvider.stream).handleError((e) {
-        print('❌ activeOrdersProvider all error: $e');
-        return <OrderModel>[];
-      });
+      return ref.watch(allOrdersStreamProvider);
     default:
-      return ref.watch(ordersByStatusProvider(filter).stream).handleError((e) {
-        print('❌ activeOrdersProvider $filter error: $e');
-        return <OrderModel>[];
-      });
+      return ref.watch(ordersByStatusProvider(filter));
   }
 });
 
