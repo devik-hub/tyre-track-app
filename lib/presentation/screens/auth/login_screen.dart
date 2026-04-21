@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../domain/providers/auth_provider.dart';
-import '../../../data/repositories/auth_repository.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 
@@ -22,17 +21,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _sendOtp() async {
     final phone = _phoneController.text.trim();
-    if (phone.length < 10) return;
-    final formattedPhone = phone.startsWith('+91') ? phone : '+91$phone';
+    // Strip leading +91 if user typed it, then check we have 10 digits
+    final digits = phone.replaceAll(RegExp(r'^\+91'), '').replaceAll(RegExp(r'\s'), '');
+    if (digits.length != 10 || !RegExp(r'^[0-9]{10}$').hasMatch(digits)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a valid 10-digit mobile number')),
+      );
+      return;
+    }
+    final formattedPhone = '+91$digits';
     await ref.read(authProvider.notifier).sendOtp(formattedPhone, (verificationId) {
-      context.push('/otp', extra: verificationId);
+      if (context.mounted) context.push('/otp', extra: verificationId);
     });
   }
 
   Future<void> _signInEmail() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
-    if (email.isEmpty || password.isEmpty) return;
+    // Validate before hitting Firebase
+    if (email.isEmpty || !email.contains('@') || !email.contains('.')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a valid email address')),
+      );
+      return;
+    }
+    if (password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter your password')),
+      );
+      return;
+    }
     await ref.read(authProvider.notifier).signInWithEmail(email, password);
   }
 
@@ -48,11 +66,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     ref.listen<AuthState>(authProvider, (prev, next) {
       if (next.userModel != null && !next.isLoading) {
         final user = next.userModel!;
-        // If phone is missing (Google/Email user), complete profile first
-        if (user.phone.isEmpty && user.uid != 'dev_mock_id_customer' && user.uid != 'dev_mock_id_admin') {
+        if (user.role == 'admin') {
+          // Admin accidentally used user login — sign out and show error
+          ref.read(authProvider.notifier).logout();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Admin accounts must use Admin Login.'),
+            ),
+          );
+        } else if (user.phone.isEmpty && user.email.isEmpty) {
+          // New user — complete profile
           context.go('/register');
-        } else if (user.role == 'admin') {
-          context.go('/admin');
         } else {
           context.go('/home');
         }
@@ -244,33 +268,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ],
 
               const SizedBox(height: 24),
-
-              // ─── Dev Shortcuts ───
-              ExpansionTile(
-                title: Text('Developer Testing', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-                tilePadding: EdgeInsets.zero,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      TextButton(
-                        onPressed: () async {
-                          await ref.read(authProvider.notifier).developerBypass('customer');
-                          if (context.mounted) context.go('/home');
-                        },
-                        child: const Text('Customer', style: TextStyle(fontSize: 12)),
-                      ),
-                      TextButton(
-                        onPressed: () async {
-                          await ref.read(authProvider.notifier).developerBypass('admin');
-                          if (context.mounted) context.go('/admin');
-                        },
-                        child: const Text('Admin', style: TextStyle(fontSize: 12)),
-                      ),
-                    ],
-                  )
-                ],
-              ),
             ],
           ),
         ),

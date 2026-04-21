@@ -12,7 +12,20 @@
           "package_name": "com.example.tyre_management"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1023008347654-5os9dlckfd4nd60evoppu55g54tqubk2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.tyre_management",
+            "certificate_hash": "41685b8855f8b641d67f92568149b091290422a1"
+          }
+        },
+        {
+          "client_id": "1023008347654-dq1mldtjrl110cls1jlaujd2fjkh3hkd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCiCl4rBFTEQsw9K4grq_fd-7sMjkRXZWg"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1023008347654-dq1mldtjrl110cls1jlaujd2fjkh3hkd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

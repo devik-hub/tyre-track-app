@@ -33,7 +33,7 @@ class _BookServiceScreenState extends State<BookServiceScreen> {
   Future<void> _submitBooking() async {
     if (_selectedDate == null || _serviceType == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Select date and service type')),
+        const SnackBar(content: Text('Please select a date and service type')),
       );
       return;
     }
@@ -47,15 +47,15 @@ class _BookServiceScreenState extends State<BookServiceScreen> {
         'createdAt': FieldValue.serverTimestamp(),
       });
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Booking created')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Booking created successfully!')),
+      );
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Booking failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Booking failed: $e')),
+      );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -64,8 +64,11 @@ class _BookServiceScreenState extends State<BookServiceScreen> {
   @override
   Widget build(BuildContext context) {
     final dateText = _selectedDate == null
-        ? 'Choose date'
-        : '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
+        ? 'Choose Date'
+        : '${_selectedDate!.day.toString().padLeft(2, '0')}/'
+            '${_selectedDate!.month.toString().padLeft(2, '0')}/'
+            '${_selectedDate!.year}';
+
     return Scaffold(
       appBar: AppBar(title: const Text('Book Service')),
       body: Padding(
@@ -73,11 +76,28 @@ class _BookServiceScreenState extends State<BookServiceScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            OutlinedButton(onPressed: _pickDate, child: Text(dateText)),
-            const SizedBox(height: 16),
+            const Text(
+              'Select Date',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: _pickDate,
+              icon: const Icon(Icons.calendar_today),
+              label: Text(dateText),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Service Type',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               initialValue: _serviceType,
               hint: const Text('Select service type'),
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+              ),
               items: _serviceTypes
                   .map((type) => DropdownMenuItem(value: type, child: Text(type)))
                   .toList(),

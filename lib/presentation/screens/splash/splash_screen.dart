@@ -43,19 +43,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   void _routeUser(AuthState authState) {
-     if (!mounted) return;
-     if (authState.userModel != null) {
-        final user = authState.userModel!;
-        if (user.phone.isEmpty && user.uid != 'dev_mock_id_customer' && user.uid != 'dev_mock_id_admin') {
-           context.go('/register');
-        } else if (user.role == 'admin') {
-           context.go('/admin');
-        } else {
-           context.go('/home');
-        }
-     } else {
-        context.go('/login');
-     }
+    if (!mounted) return;
+    if (authState.userModel != null) {
+      final user = authState.userModel!;
+      if (user.phone.isEmpty && user.email.isEmpty) {
+        // New phone-auth user who hasn't completed their profile yet
+        context.go('/register');
+      } else if (user.role == 'admin') {
+        context.go('/admin');
+      } else {
+        context.go('/home');
+      }
+    } else {
+      // Not logged in → show role selection
+      context.go('/role-select');
+    }
   }
 
   @override
