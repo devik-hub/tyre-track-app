@@ -15,7 +15,13 @@ class HelpSupportScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Help & Support')),
+      appBar: AppBar(
+        title: const Text('Help & Support'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -25,9 +31,16 @@ class HelpSupportScreen extends StatelessWidget {
              const SizedBox(height: 24),
              _buildContactCard(
                icon: Icons.phone,
-               title: 'Call Us Now',
-               subtitle: '+91 98222 89488',
-               onTap: () => _launchUrl('tel:+919822289488'),
+               title: 'Call Us (Primary)',
+               subtitle: '+91 9637118817',
+               onTap: () => _launchUrl('tel:+919637118817'),
+             ),
+             const SizedBox(height: 16),
+             _buildContactCard(
+               icon: Icons.phone_in_talk,
+               title: 'Call Us (Alternate)',
+               subtitle: '+91 8459391282',
+               onTap: () => _launchUrl('tel:+918459391282'),
              ),
              const SizedBox(height: 16),
              _buildContactCard(
@@ -40,8 +53,8 @@ class HelpSupportScreen extends StatelessWidget {
              _buildContactCard(
                icon: Icons.location_on,
                title: 'Visit our Workshop',
-               subtitle: 'Near Khed Shivapur Toll Plaza, Pune-Satara Highway',
-               onTap: () => _launchUrl('https://maps.google.com/?q=Jagadale+Retreads'),
+               subtitle: 'Kalyani Corner, Caterpillar Area, Airport Road, MIDC Area, Bandalwadi, Maharashtra 413133',
+               onTap: () => _launchUrl('https://maps.google.com/?q=Jagadale+Retreads+Bandalwadi+Maharashtra'),
              ),
              const Divider(height: 48),
              const Text('Frequently Asked Questions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),

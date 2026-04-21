@@ -62,7 +62,13 @@ class _BookServiceScreenState extends ConsumerState<BookServiceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Book a Service')),
+      appBar: AppBar(
+        title: const Text('Book a Service'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
       body: Stepper(
         currentStep: _currentStep,
         onStepContinue: () {
@@ -102,7 +108,7 @@ class _BookServiceScreenState extends ConsumerState<BookServiceScreen> {
             title: const Text('Service Type'),
             content: DropdownButtonFormField<String>(
               value: _selectedService,
-              items: ['Retreading', 'Remoulding', 'Inspection', 'New Fitment', 'Balancing', 'Rotation']
+              items: ['Retreading', 'Remoulding', 'Inspection', 'New Fitment']
                   .map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
               onChanged: (val) => setState(() => _selectedService = val!),
               decoration: const InputDecoration(labelText: 'Select Service'),

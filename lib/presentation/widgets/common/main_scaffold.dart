@@ -19,8 +19,7 @@ class _MainScaffoldState extends State<MainScaffold> {
       case 0: context.go('/home'); break;
       case 1: context.go('/tyres'); break;
       case 2: context.go('/services'); break;
-      case 3: context.go('/vehicles'); break;
-      case 4: context.go('/account'); break;
+      case 3: context.go('/account'); break;
     }
   }
 
@@ -43,10 +42,9 @@ class _MainScaffoldState extends State<MainScaffold> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _buildNavItem(Icons.home_outlined, Icons.home, 'Home', 0),
-            _buildNavItem(Icons.shopping_bag_outlined, Icons.shopping_bag, 'Buy Tires', 1),
+            _buildNavItem(Icons.shopping_bag_outlined, Icons.shopping_bag, 'Buy Tyres', 1),
             const SizedBox(width: 48), // Gap for FAB
-            _buildNavItem(Icons.directions_car_outlined, Icons.directions_car, 'Vehicles', 3),
-            _buildNavItem(Icons.person_outline, Icons.person, 'Account', 4),
+            _buildNavItem(Icons.person_outline, Icons.person, 'Account', 3),
           ],
         ),
       ),

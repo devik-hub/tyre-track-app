@@ -22,13 +22,25 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
     if (product == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Product Detail')),
+        appBar: AppBar(
+          title: const Text('Product Detail'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ),
         body: const Center(child: Text('Product not found', style: TextStyle(color: Colors.grey, fontSize: 16))),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(product.name)),
+      appBar: AppBar(
+        title: Text(product.name),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

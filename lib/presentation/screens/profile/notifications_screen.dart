@@ -13,7 +13,13 @@ class NotificationsScreen extends ConsumerWidget {
     final notificationStream = ref.watch(notificationProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Notifications')),
+      appBar: AppBar(
+        title: const Text('Notifications'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
       body: notificationStream.when(
         data: (notifications) {
            if (notifications.isEmpty) {

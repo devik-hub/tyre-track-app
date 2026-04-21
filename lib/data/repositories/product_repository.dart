@@ -47,4 +47,17 @@ class ProductRepository {
   Future<void> updateStock(String productId, int newQuantity) async {
     await _col.doc(productId).update({'stockQuantity': newQuantity});
   }
+
+  // ─── Image Management ───
+  Future<void> addImageUrl(String productId, String url) async {
+    await _col.doc(productId).update({
+      'imageUrls': FieldValue.arrayUnion([url]),
+    });
+  }
+
+  Future<void> removeImageUrl(String productId, String url) async {
+    await _col.doc(productId).update({
+      'imageUrls': FieldValue.arrayRemove([url]),
+    });
+  }
 }

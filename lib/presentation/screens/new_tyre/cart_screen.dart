@@ -77,7 +77,13 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     final total = ref.read(cartProvider.notifier).totalAmount;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Your Cart')),
+      appBar: AppBar(
+        title: const Text('Your Cart'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
       body: cartItems.isEmpty 
         ? const Center(child: Text('Your cart is empty', style: TextStyle(fontSize: 18)))
         : ListView.builder(

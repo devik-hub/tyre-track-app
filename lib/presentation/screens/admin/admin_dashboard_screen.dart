@@ -74,6 +74,10 @@ class AdminDashboardScreen extends ConsumerWidget {
             _buildActionTile(context, Icons.build_rounded, 'Service Bookings', 'Process and assign technicians to customer service requests', '/admin/bookings'),
             const SizedBox(height: 16),
             _buildActionTile(context, Icons.receipt_long_rounded, 'Customer Orders', 'Track fulfillment and dispatch new tyre orders', '/admin/orders'),
+            const SizedBox(height: 16),
+            _buildActionTile(context, Icons.miscellaneous_services_rounded, 'Service Availability', 'Enable or disable services for today based on workload', '/admin/services'),
+            const SizedBox(height: 16),
+            _buildActionTile(context, Icons.category_rounded, 'Vehicle Categories', 'Create and manage vehicle categories for the catalog', '/admin/categories'),
             const SizedBox(height: 40),
           ],
         ),
@@ -93,7 +97,7 @@ class AdminDashboardScreen extends ConsumerWidget {
         _buildGradientStatCard('Total Revenue', '₹${stats['revenue'] ?? 0}', [Colors.orange.shade800, Colors.deepOrange.shade600], Icons.account_balance_wallet_rounded),
         _buildGradientStatCard('Pending Bookings', '${stats['pendingBookings'] ?? 0}', [Colors.blue.shade800, Colors.blue.shade600], Icons.pending_actions_rounded),
         _buildGradientStatCard('Active Jobs', '${stats['activeRetreads'] ?? 0}', [Colors.green.shade800, Colors.green.shade600], Icons.engineering_rounded),
-        _buildGradientStatCard('Low Stock Alerts', '${stats['lowStockCount'] ?? 0}', [const Color(0xFFC62828), AppColors.mrfRed], Icons.warning_rounded),
+        _buildGradientStatCard('Low Stock Alerts', '${stats['lowStock'] ?? 0}', [const Color(0xFFC62828), AppColors.mrfRed], Icons.warning_rounded),
       ],
     );
   }

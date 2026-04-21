@@ -22,6 +22,8 @@ import '../presentation/screens/admin/admin_dashboard_screen.dart';
 import '../presentation/screens/admin/manage_inventory_screen.dart';
 import '../presentation/screens/admin/manage_bookings_screen.dart';
 import '../presentation/screens/admin/admin_orders_screen.dart';
+import '../presentation/screens/admin/manage_services_screen.dart';
+import '../presentation/screens/admin/manage_categories_screen.dart';
 
 import '../presentation/screens/public/about_us_screen.dart';
 import '../presentation/screens/public/contact_us_screen.dart';
@@ -76,6 +78,8 @@ class AppRouter {
           GoRoute(path: '/admin/inventory', builder: (context, state) => const ManageInventoryScreen()),
           GoRoute(path: '/admin/bookings', builder: (context, state) => const ManageBookingsScreen()),
           GoRoute(path: '/admin/orders', builder: (context, state) => const AdminOrdersScreen()),
+          GoRoute(path: '/admin/services', builder: (context, state) => const ManageServicesScreen()),
+          GoRoute(path: '/admin/categories', builder: (context, state) => const ManageCategoriesScreen()),
         ],
       ),
 

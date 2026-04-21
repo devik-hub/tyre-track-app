@@ -52,7 +52,6 @@ class AccountHomeScreen extends ConsumerWidget {
               _buildListTile(context, Icons.admin_panel_settings, 'Admin Dashboard', () => context.push('/admin')),
               const Divider(),
             ],
-            _buildListTile(context, Icons.directions_car_outlined, 'My Vehicles', () => context.push('/vehicles')),
             _buildListTile(context, Icons.history, 'Order History', () => context.push('/orders')),
             _buildListTile(context, Icons.build_outlined, 'Service History', () => _showServiceHistory(context, ref)),
             _buildListTile(context, Icons.notifications_none, 'Notifications', () => context.push('/notifications')),

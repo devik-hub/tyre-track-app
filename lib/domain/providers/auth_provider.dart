@@ -1,10 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../data/repositories/auth_repository.dart';
+import '../../data/repositories/otp_rate_limit_repository.dart';
 import '../../data/models/user_model.dart';
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier(ref.read(authRepositoryProvider));
+  return AuthNotifier(
+    ref.read(authRepositoryProvider),
+    ref.read(otpRateLimitRepositoryProvider),
+  );
 });
 
 class AuthState {
@@ -25,8 +29,9 @@ class AuthState {
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthRepository _authRepo;
+  final OtpRateLimitRepository _otpRateLimitRepo;
 
-  AuthNotifier(this._authRepo) : super(AuthState(isLoading: true)) {
+  AuthNotifier(this._authRepo, this._otpRateLimitRepo) : super(AuthState(isLoading: true)) {
     _init();
   }
 
@@ -57,6 +62,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> sendOtp(String phone, Function(String) onCodeSent) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
+      // Check OTP rate limit (max 10 per day)
+      await _otpRateLimitRepo.checkAndIncrementOtpCount(phone);
+
       await _authRepo.verifyPhoneNumber(
         phone,
         (verificationId, forceResendingToken) {

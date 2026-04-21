@@ -9,6 +9,10 @@ class CompanyAboutUsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('About Us'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
       body: SingleChildScrollView(
         child: Column(

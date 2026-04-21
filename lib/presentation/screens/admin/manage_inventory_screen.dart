@@ -1,9 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../data/models/product_model.dart';
 import '../../../data/repositories/product_repository.dart';
+import '../../../data/repositories/storage_repository.dart';
 import '../../../domain/providers/product_provider.dart';
 
 class ManageInventoryScreen extends ConsumerWidget {
@@ -64,7 +68,17 @@ class ManageInventoryScreen extends ConsumerWidget {
                             color: Colors.white.withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Icon(Icons.tire_repair, color: isLowStock ? AppColors.mrfRed : Colors.white70, size: 30),
+                          child: p.imageUrls.isNotEmpty
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: CachedNetworkImage(
+                                    imageUrl: p.imageUrls.first,
+                                    fit: BoxFit.cover,
+                                    placeholder: (c, u) => const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.mrfRed))),
+                                    errorWidget: (c, u, e) => Icon(Icons.tire_repair, color: isLowStock ? AppColors.mrfRed : Colors.white70, size: 30),
+                                  ),
+                                )
+                              : Icon(Icons.tire_repair, color: isLowStock ? AppColors.mrfRed : Colors.white70, size: 30),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -86,6 +100,10 @@ class ManageInventoryScreen extends ConsumerWidget {
                                   _buildDataChip(isLowStock ? Colors.red : Colors.green, 'Stock: ${p.stockQuantity}'),
                                   const SizedBox(width: 8),
                                   _buildDataChip(Colors.blue, p.category.toUpperCase()),
+                                  if (p.imageUrls.isNotEmpty) ...[
+                                    const SizedBox(width: 8),
+                                    _buildDataChip(Colors.purple, '${p.imageUrls.length} img'),
+                                  ],
                                 ],
                               )
                             ],
@@ -96,10 +114,12 @@ class ManageInventoryScreen extends ConsumerWidget {
                           color: const Color(0xFF2C2C2C),
                           onSelected: (action) {
                             if (action == 'edit') _showProductBottomSheet(context, ref, p);
+                            if (action == 'images') _showImageManager(context, ref, p);
                             if (action == 'delete') _confirmDelete(context, ref, p);
                           },
                           itemBuilder: (_) => [
                             const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit, color: Colors.white70, size: 18), SizedBox(width: 8), Text('Edit', style: TextStyle(color: Colors.white))])),
+                            const PopupMenuItem(value: 'images', child: Row(children: [Icon(Icons.photo_camera, color: Colors.white70, size: 18), SizedBox(width: 8), Text('Manage Images', style: TextStyle(color: Colors.white))])),
                             const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete, color: AppColors.mrfRed, size: 18), SizedBox(width: 8), Text('Delete', style: TextStyle(color: AppColors.mrfRed))])),
                           ],
                         ),
@@ -161,6 +181,17 @@ class ManageInventoryScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  // ─── Image Manager Bottom Sheet ───
+  void _showImageManager(BuildContext context, WidgetRef ref, ProductModel product) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1E1E1E),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => _ImageManagerSheet(product: product),
     );
   }
 
@@ -284,6 +315,238 @@ class ManageInventoryScreen extends ConsumerWidget {
         fillColor: const Color(0xFF2C2C2C),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.mrfRed, width: 1)),
+      ),
+    );
+  }
+}
+
+/// Stateful image manager sheet for camera/gallery upload and removal
+class _ImageManagerSheet extends ConsumerStatefulWidget {
+  final ProductModel product;
+  const _ImageManagerSheet({required this.product});
+
+  @override
+  ConsumerState<_ImageManagerSheet> createState() => _ImageManagerSheetState();
+}
+
+class _ImageManagerSheetState extends ConsumerState<_ImageManagerSheet> {
+  final ImagePicker _picker = ImagePicker();
+  bool _isUploading = false;
+
+  Future<void> _pickAndUpload(ImageSource source) async {
+    final XFile? picked = await _picker.pickImage(
+      source: source,
+      maxWidth: 1200,
+      maxHeight: 1200,
+      imageQuality: 80,
+    );
+    if (picked == null) return;
+
+    setState(() => _isUploading = true);
+
+    try {
+      final file = File(picked.path);
+      final downloadUrl = await ref
+          .read(storageRepositoryProvider)
+          .uploadProductImage(widget.product.productId, file);
+
+      await ref
+          .read(productRepositoryProvider)
+          .addImageUrl(widget.product.productId, downloadUrl);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Image uploaded successfully! ✨')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Upload failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
+  }
+
+  Future<void> _removeImage(String url) async {
+    try {
+      await ref.read(productRepositoryProvider).removeImageUrl(widget.product.productId, url);
+      await ref.read(storageRepositoryProvider).deleteImage(url);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Image removed')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error removing image: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Watch product stream to get live updates of imageUrls
+    final productsAsync = ref.watch(productStreamProvider);
+    final currentProduct = productsAsync.whenOrNull(
+      data: (products) {
+        try {
+          return products.firstWhere((p) => p.productId == widget.product.productId);
+        } catch (_) {
+          return null;
+        }
+      },
+    );
+    final imageUrls = currentProduct?.imageUrls ?? widget.product.imageUrls;
+
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade600,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Images: ${widget.product.name}',
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          const SizedBox(height: 16),
+
+          // Upload buttons
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _isUploading ? null : () => _pickAndUpload(ImageSource.camera),
+                  icon: const Icon(Icons.camera_alt, size: 18),
+                  label: const Text('Camera'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.mrfRed,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _isUploading ? null : () => _pickAndUpload(ImageSource.gallery),
+                  icon: const Icon(Icons.photo_library, size: 18),
+                  label: const Text('Gallery'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2C2C2C),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    side: const BorderSide(color: Colors.white24),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Upload progress
+          if (_isUploading)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 16),
+              child: Column(
+                children: [
+                  LinearProgressIndicator(color: AppColors.mrfRed, backgroundColor: Color(0xFF2C2C2C)),
+                  SizedBox(height: 8),
+                  Text('Uploading image...', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                ],
+              ),
+            ),
+
+          // Existing images grid
+          if (imageUrls.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2C2C2C),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Icon(Icons.image_not_supported_outlined, color: Colors.grey.shade700, size: 40),
+                  const SizedBox(height: 8),
+                  Text('No images yet', style: TextStyle(color: Colors.grey.shade500)),
+                ],
+              ),
+            )
+          else
+            SizedBox(
+              height: 120,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: imageUrls.length,
+                itemBuilder: (context, index) {
+                  return Container(
+                    width: 120,
+                    margin: const EdgeInsets.only(right: 12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white10),
+                    ),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: CachedNetworkImage(
+                            imageUrl: imageUrls[index],
+                            fit: BoxFit.cover,
+                            placeholder: (c, u) => const Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.mrfRed),
+                              ),
+                            ),
+                            errorWidget: (c, u, e) => const Center(
+                              child: Icon(Icons.broken_image, color: Colors.grey),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: GestureDetector(
+                            onTap: () => _removeImage(imageUrls[index]),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: AppColors.mrfRed,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.close, color: Colors.white, size: 14),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          const SizedBox(height: 16),
+        ],
       ),
     );
   }

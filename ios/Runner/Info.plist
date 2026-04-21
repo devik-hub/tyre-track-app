@@ -45,5 +45,19 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- image_picker: camera and photo library permissions -->
+	<key>NSCameraUsageDescription</key>
+	<string>Jagadale Retreads needs camera access to capture tyre images for inspection and inventory.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Jagadale Retreads needs access to your photo library to upload tyre images.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Jagadale Retreads needs permission to save tyre images to your photo library.</string>
+	<!-- url_launcher: allow phone and email links -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tel</string>
+		<string>mailto</string>
+		<string>maps</string>
+	</array>
 </dict>
 </plist>
