@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/routes/app_routes.dart';
-
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/providers/auth_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -22,41 +20,40 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _navigateToNext() async {
-    // Show splash for 1.5 seconds min
+    // Show splash for 1.5 seconds minimum
     await Future.delayed(const Duration(milliseconds: 1500));
-    
+
     if (!mounted) return;
-    
-    // We need to wait for Riverpod to fetch the user model so we know their role
+
     final authState = ref.read(authProvider);
-    
+
     if (authState.isLoading) {
-      // If it's still loading the Firestore document, wait a little bit
-      // Setup a listener that fires once when loading completes
+      // Auth is still resolving — wait for the first non-loading state
       ref.listenManual<AuthState>(authProvider, (prev, next) {
         if (!next.isLoading) {
-           _routeUser(next);
+          _routeUser(next);
         }
       });
     } else {
-       _routeUser(authState);
+      _routeUser(authState);
     }
   }
 
   void _routeUser(AuthState authState) {
-     if (!mounted) return;
-     if (authState.userModel != null) {
-        final user = authState.userModel!;
-        if (user.phone.isEmpty && user.uid != 'dev_mock_id_customer' && user.uid != 'dev_mock_id_admin') {
-           context.go(AppRoutes.register);
-        } else if (user.role == 'admin') {
-           context.go(AppRoutes.admin);
-        } else {
-           context.go(AppRoutes.home);
-        }
-     } else {
-        context.go(AppRoutes.login);
-     }
+    if (!mounted) return;
+    if (authState.userModel != null) {
+      final user = authState.userModel!;
+      // If phone is missing (Google/Email user first login), complete profile
+      if (user.phone.isEmpty) {
+        context.go(AppRoutes.register);
+      } else if (user.role == 'admin') {
+        context.go(AppRoutes.admin);
+      } else {
+        context.go(AppRoutes.home);
+      }
+    } else {
+      context.go(AppRoutes.login);
+    }
   }
 
   @override
@@ -72,8 +69,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               height: 100,
               width: 100,
             ),
-            SizedBox(height: 16),
-            Text(
+            const SizedBox(height: 16),
+            const Text(
               'Jagadale Retreads',
               style: TextStyle(
                 color: Colors.white,
@@ -81,8 +78,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 24),
-            CircularProgressIndicator(color: Colors.white),
+            const SizedBox(height: 24),
+            const CircularProgressIndicator(color: Colors.white),
           ],
         ),
       ),

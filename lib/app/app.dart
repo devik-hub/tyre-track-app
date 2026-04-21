@@ -9,13 +9,15 @@ class TyreTrackApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+
     return MaterialApp.router(
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.light, // Future: Make this reactive via Provider for Dark Mode
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      routerConfig: AppRouter.router,
+      routerConfig: router,
     );
   }
 }

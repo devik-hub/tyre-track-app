@@ -90,4 +90,60 @@ class AuthRepository {
   Future<void> saveUserData(UserModel user) async {
     await _firestore.collection(FirebaseConstants.usersCollection).doc(user.uid).set(user.toMap());
   }
+
+  /// Updates only the profile fields (name, phone, email) without touching
+  /// the 'role' field, so an admin's role is never overwritten.
+  /// Returns the refreshed UserModel with the preserved role.
+  Future<UserModel> updateUserProfile({
+    required String uid,
+    required String name,
+    required String phone,
+    required String email,
+  }) async {
+    final docRef = _firestore.collection(FirebaseConstants.usersCollection).doc(uid);
+
+    // Merge only profile fields — role, createdAt, etc. are untouched
+    await docRef.set({
+      'name': name,
+      'phone': phone,
+      'email': email,
+    }, SetOptions(merge: true));
+
+    // Re-read the full document so we get the preserved role
+    final snap = await docRef.get();
+    return UserModel.fromMap(snap.data() as Map<String, dynamic>, snap.id);
+  }
+
+  /// Ensures a Firestore user document exists for the given Firebase Auth user.
+  /// If the document already exists, merge keeps existing fields (especially 'role').
+  /// If it doesn't exist, creates it with role: 'customer' as default.
+  Future<UserModel> ensureUserDocument(User firebaseUser) async {
+    final docRef = _firestore.collection(FirebaseConstants.usersCollection).doc(firebaseUser.uid);
+    final doc = await docRef.get();
+
+    if (doc.exists) {
+      return UserModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+    }
+
+    // First-time user — create with default 'customer' role
+    final newUser = UserModel(
+      uid: firebaseUser.uid,
+      name: firebaseUser.displayName ?? 'User',
+      phone: firebaseUser.phoneNumber ?? '',
+      email: firebaseUser.email ?? '',
+      role: 'customer',
+      createdAt: DateTime.now(),
+    );
+    await docRef.set(newUser.toMap());
+    return newUser;
+  }
+
+  /// Streams the user's role field from Firestore in real-time.
+  Stream<String> streamUserRole(String uid) {
+    return _firestore
+        .collection(FirebaseConstants.usersCollection)
+        .doc(uid)
+        .snapshots()
+        .map((snap) => snap.data()?['role'] as String? ?? 'customer');
+  }
 }

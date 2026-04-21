@@ -50,7 +50,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (next.userModel != null && !next.isLoading) {
         final user = next.userModel!;
         // If phone is missing (Google/Email user), complete profile first
-        if (user.phone.isEmpty && user.uid != 'dev_mock_id_customer' && user.uid != 'dev_mock_id_admin') {
+        if (user.phone.isEmpty) {
           context.go(AppRoutes.register);
         } else if (user.role == 'admin') {
           context.go(AppRoutes.admin);
@@ -250,34 +250,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ],
 
-              const SizedBox(height: 24),
-
-              // ─── Dev Shortcuts ───
-              ExpansionTile(
-                title: Text('Developer Testing', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-                tilePadding: EdgeInsets.zero,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      TextButton(
-                        onPressed: () async {
-                          await ref.read(authProvider.notifier).developerBypass('customer');
-                          if (context.mounted) context.go(AppRoutes.home);
-                        },
-                        child: const Text('Customer', style: TextStyle(fontSize: 12)),
-                      ),
-                      TextButton(
-                        onPressed: () async {
-                          await ref.read(authProvider.notifier).developerBypass('admin');
-                          if (context.mounted) context.go(AppRoutes.admin);
-                        },
-                        child: const Text('Admin', style: TextStyle(fontSize: 12)),
-                      ),
-                    ],
-                  )
-                ],
-              ),
             ],
           ),
         ),

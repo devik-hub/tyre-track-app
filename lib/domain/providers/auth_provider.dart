@@ -39,18 +39,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     _authRepo.authStateChanges.listen((User? user) async {
       state = state.copyWith(isLoading: true);
       if (user != null) {
-        UserModel? userModel = await _authRepo.getUserData(user.uid);
-        // Auto-create profile for Google/Email users on first login
-        if (userModel == null) {
-          userModel = UserModel(
-            uid: user.uid,
-            name: user.displayName ?? 'User',
-            phone: user.phoneNumber ?? '',
-            email: user.email ?? '',
-            createdAt: DateTime.now(),
-          );
-          await _authRepo.saveUserData(userModel);
-        }
+        // ensureUserDocument creates the doc with role:'customer' if it
+        // doesn't exist, or reads the existing one (preserving admin roles).
+        final userModel = await _authRepo.ensureUserDocument(user);
         state = state.copyWith(userModel: userModel, isLoading: false);
       } else {
         state = state.copyWith(userModel: null, isLoading: false);
@@ -135,20 +126,22 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   // ─── Profile Registration ───
+  /// Updates profile fields via merge — never overwrites the 'role' field.
+  /// The returned UserModel includes the Firestore-persisted role, so the
+  /// router redirect immediately evaluates correctly after this call.
   Future<void> registerUser(String name, String phone, String email) async {
      state = state.copyWith(isLoading: true, clearError: true);
      try {
        final user = _authRepo.currentUser;
        if (user != null) {
-         final userModel = UserModel(
+         final updatedModel = await _authRepo.updateUserProfile(
            uid: user.uid,
            name: name,
            phone: phone,
            email: email,
-           createdAt: DateTime.now(),
          );
-         await _authRepo.saveUserData(userModel);
-         state = state.copyWith(isLoading: false, userModel: userModel);
+         // updatedModel has the correct role from Firestore (admin/customer)
+         state = state.copyWith(isLoading: false, userModel: updatedModel);
        }
      } catch (e) {
        state = state.copyWith(isLoading: false, error: e.toString());
@@ -157,19 +150,5 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> logout() async {
     await _authRepo.signOut();
-  }
-
-  // Dev bypass for testing
-  Future<void> developerBypass(String role) async {
-    state = state.copyWith(isLoading: true, clearError: true);
-    await Future.delayed(const Duration(seconds: 1));
-    final dummyUser = UserModel(
-      uid: 'dev_mock_id_$role',
-      name: 'Developer Testing',
-      phone: '+919999999999',
-      role: role,
-      createdAt: DateTime.now(),
-    );
-    state = state.copyWith(isLoading: false, userModel: dummyUser);
   }
 }

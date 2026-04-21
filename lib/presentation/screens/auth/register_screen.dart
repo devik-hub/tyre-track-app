@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../domain/providers/auth_provider.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../app/routes/app_routes.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -18,7 +20,30 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
 
-  // For users who arrive via Phone OTP (already authenticated, just need profile)
+  @override
+  void initState() {
+    super.initState();
+    // Pre-fill with Google / existing Firebase Auth data
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    if (firebaseUser != null) {
+      if (firebaseUser.displayName != null && firebaseUser.displayName!.isNotEmpty) {
+        _nameController.text = firebaseUser.displayName!;
+      }
+      if (firebaseUser.email != null && firebaseUser.email!.isNotEmpty) {
+        _emailController.text = firebaseUser.email!;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  // For users who arrive via Phone OTP or Google (already authenticated, just need profile)
   Future<void> _completeProfile() async {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
@@ -27,7 +52,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final user = ref.read(authRepositoryProvider).currentUser;
     if (user != null) {
       await ref.read(authProvider.notifier).registerUser(name, user.phoneNumber ?? '', email);
-      if (mounted) context.go('/home');
+      // After registerUser completes, authState.userModel has the correct
+      // Firestore role. The router's redirect guard handles navigation.
+      if (mounted) {
+        final updatedUser = ref.read(authProvider).userModel;
+        if (updatedUser != null && updatedUser.role == 'admin') {
+          context.go(AppRoutes.admin);
+        } else {
+          context.go(AppRoutes.home);
+        }
+      }
     }
   }
 
@@ -48,7 +82,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final user = ref.read(authRepositoryProvider).currentUser;
     if (user != null) {
       await ref.read(authProvider.notifier).registerUser(name, '', email);
-      if (mounted) context.go('/home');
+      if (mounted) {
+        final updatedUser = ref.read(authProvider).userModel;
+        if (updatedUser != null && updatedUser.role == 'admin') {
+          context.go(AppRoutes.admin);
+        } else {
+          context.go(AppRoutes.home);
+        }
+      }
     }
   }
 
@@ -147,7 +188,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             ),
             const SizedBox(height: 12),
             TextButton(
-              onPressed: () => context.pop(),
+              onPressed: () => context.go(AppRoutes.login),
               child: const Text('Already have an account? Login', style: TextStyle(color: AppColors.mrfRed)),
             ),
           ],

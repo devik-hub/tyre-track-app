@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'routes/app_routes.dart';
+import '../domain/providers/auth_provider.dart';
 import '../presentation/screens/splash/splash_screen.dart';
 import '../presentation/screens/onboarding/onboarding_screen.dart';
 import '../presentation/screens/auth/login_screen.dart';
@@ -39,10 +41,55 @@ final GlobalKey<NavigatorState> _rootNavigatorKey  = GlobalKey<NavigatorState>(d
 final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
 final GlobalKey<NavigatorState> _adminShellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'admin_shell');
 
-class AppRouter {
-  static final router = GoRouter(
+/// Notifier that triggers GoRouter's redirect re-evaluation whenever
+/// the auth state changes (login, logout, role change).
+class _AuthChangeNotifier extends ChangeNotifier {
+  _AuthChangeNotifier(Ref ref) {
+    ref.listen<AuthState>(authProvider, (prev, next) {
+      notifyListeners();
+    });
+  }
+}
+
+/// Riverpod provider for GoRouter.
+/// The redirect guard checks the user's Firestore role on every navigation
+/// and blocks non-admin users from /admin/** routes.
+final routerProvider = Provider<GoRouter>((ref) {
+  final refreshNotifier = _AuthChangeNotifier(ref);
+
+  return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: AppRoutes.splash,
+    refreshListenable: refreshNotifier,
+    redirect: (context, state) {
+      final path = state.uri.path;
+      final authState = ref.read(authProvider);
+
+      // Allow splash, login, register, onboarding, OTP to pass through ungated
+      const ungatedPaths = [
+        AppRoutes.splash,
+        AppRoutes.login,
+        AppRoutes.register,
+        AppRoutes.onboarding,
+        AppRoutes.otp,
+      ];
+      if (ungatedPaths.contains(path)) return null;
+
+      // If auth is still loading, don't redirect yet
+      if (authState.isLoading) return null;
+
+      // If no user is logged in, redirect to login
+      final user = authState.userModel;
+      if (user == null) return AppRoutes.login;
+
+      // ── Admin Route Guard ──
+      // Block non-admin users from any /admin/** path
+      if (path.startsWith('/admin') && user.role != 'admin') {
+        return AppRoutes.home;
+      }
+
+      return null; // No redirect needed
+    },
     routes: [
       GoRoute(path: AppRoutes.splash,      builder: (context, state) => const SplashScreen()),
       GoRoute(path: AppRoutes.onboarding,  builder: (context, state) => const OnboardingScreen()),
@@ -80,7 +127,7 @@ class AppRouter {
       GoRoute(path: AppRoutes.gallery,        builder: (context, state) => const CompanyGalleryScreen()),
       GoRoute(path: AppRoutes.legacyProducts, builder: (context, state) => const CompanyProductsScreen()),
 
-      // Admin Shell Route
+      // Admin Shell Route (protected by redirect above)
       ShellRoute(
         navigatorKey: _adminShellNavigatorKey,
         builder: (context, state, child) => AdminScaffold(child: child),
@@ -116,4 +163,4 @@ class AppRouter {
       ),
     ],
   );
-}
+});
