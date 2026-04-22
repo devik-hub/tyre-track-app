@@ -15,6 +15,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
   static const _titles = ['Dashboard', 'Tyres', 'Bookings', 'Profile'];
+
+  // Tabs as widgets — no nested Scaffolds
   static const _tabs = [
     DashboardTab(),
     TyreListScreen(),
@@ -28,65 +30,15 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text(_titles[_selectedIndex]),
       ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Image.asset('assets/images/logo.png', height: 60, errorBuilder: (c,e,s) => const SizedBox()),
-                  const Spacer(),
-                  const Text('Jagadale Retreads', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.info),
-              title: const Text('About Us'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/about');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.contact_mail),
-              title: const Text('Contact Us'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/contact');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.shopping_bag),
-              title: const Text('Our Products'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/products');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Gallery'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/gallery');
-              },
-            ),
-          ],
-        ),
-      ),
-      body: _tabs[_selectedIndex],
+      // FAB only shows on the Tyres tab (index 1)
       floatingActionButton: _selectedIndex == 1
           ? FloatingActionButton(
               onPressed: () => Navigator.pushNamed(context, '/add_tyre'),
+              tooltip: 'Add Tyre',
               child: const Icon(Icons.add),
             )
           : null,
+      body: _tabs[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         type: BottomNavigationBarType.fixed,
@@ -117,4 +69,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-

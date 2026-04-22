@@ -4,7 +4,9 @@ abstract class AppRoutes {
   // ─── Auth ───
   static const String splash      = '/splash';
   static const String onboarding  = '/onboarding';
+  static const String roleSelect  = '/role-select';
   static const String login       = '/login';
+  static const String adminLogin  = '/admin-login';
   static const String otp         = '/otp';
   static const String register    = '/register';
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../app/routes/app_routes.dart';
 import '../../../domain/providers/auth_provider.dart';
 import '../../../domain/providers/booking_provider.dart';
 
@@ -49,22 +50,22 @@ class AccountHomeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             if (user?.role == 'admin') ...[
-              _buildListTile(context, Icons.admin_panel_settings, 'Admin Dashboard', () => context.push('/admin')),
+              _buildListTile(context, Icons.admin_panel_settings, 'Admin Dashboard', () => context.push(AppRoutes.admin)),
               const Divider(),
             ],
-            _buildListTile(context, Icons.history, 'Order History', () => context.push('/orders')),
+            _buildListTile(context, Icons.history, 'Order History', () => context.push(AppRoutes.orders)),
             _buildListTile(context, Icons.build_outlined, 'Service History', () => _showServiceHistory(context, ref)),
-            _buildListTile(context, Icons.notifications_none, 'Notifications', () => context.push('/notifications')),
-            _buildListTile(context, Icons.headset_mic_outlined, 'Help & Support', () => context.push('/help')),
-            _buildListTile(context, Icons.info_outline, 'About Us', () => context.push('/about')),
-            _buildListTile(context, Icons.phone, 'Contact Us', () => context.push('/contact')),
+            _buildListTile(context, Icons.notifications_none, 'Notifications', () => context.push(AppRoutes.notifications)),
+            _buildListTile(context, Icons.headset_mic_outlined, 'Help & Support', () => context.push(AppRoutes.help)),
+            _buildListTile(context, Icons.info_outline, 'About Us', () => context.push(AppRoutes.about)),
+            _buildListTile(context, Icons.phone, 'Contact Us', () => context.push(AppRoutes.contact)),
             const Divider(),
             ListTile(
               leading: const Icon(Icons.logout, color: AppColors.mrfRed),
               title: const Text('Logout', style: TextStyle(color: AppColors.mrfRed, fontWeight: FontWeight.bold)),
               onTap: () async {
                 await ref.read(authProvider.notifier).logout();
-                if (context.mounted) context.go('/login');
+                if (context.mounted) context.go(AppRoutes.roleSelect);
               },
             ),
           ],

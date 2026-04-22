@@ -43,8 +43,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     if (!mounted) return;
     if (authState.userModel != null) {
       final user = authState.userModel!;
-      // If phone is missing (Google/Email user first login), complete profile
-      if (user.phone.isEmpty) {
+      if (user.phone.isEmpty && user.email.isEmpty) {
+        // New phone-auth user who hasn't completed their profile yet
         context.go(AppRoutes.register);
       } else if (user.role == 'admin') {
         context.go(AppRoutes.admin);
@@ -52,7 +52,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         context.go(AppRoutes.home);
       }
     } else {
-      context.go(AppRoutes.login);
+      // Not logged in → show Devika's role selection screen
+      context.go(AppRoutes.roleSelect);
     }
   }
 

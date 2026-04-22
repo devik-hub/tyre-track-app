@@ -5,7 +5,9 @@ import 'routes/app_routes.dart';
 import '../domain/providers/auth_provider.dart';
 import '../presentation/screens/splash/splash_screen.dart';
 import '../presentation/screens/onboarding/onboarding_screen.dart';
+import '../presentation/screens/auth/role_select_screen.dart';
 import '../presentation/screens/auth/login_screen.dart';
+import '../presentation/screens/auth/admin_login_screen.dart';
 import '../presentation/screens/auth/otp_screen.dart';
 import '../presentation/screens/auth/register_screen.dart';
 import '../presentation/screens/home/home_screen.dart';
@@ -65,10 +67,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       final path = state.uri.path;
       final authState = ref.read(authProvider);
 
-      // Allow splash, login, register, onboarding, OTP to pass through ungated
+      // Allow splash, login, register, onboarding, OTP, role-select, admin-login to pass ungated
       const ungatedPaths = [
         AppRoutes.splash,
+        AppRoutes.roleSelect,
         AppRoutes.login,
+        AppRoutes.adminLogin,
         AppRoutes.register,
         AppRoutes.onboarding,
         AppRoutes.otp,
@@ -78,9 +82,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       // If auth is still loading, don't redirect yet
       if (authState.isLoading) return null;
 
-      // If no user is logged in, redirect to login
+      // If no user is logged in, redirect to role selection
       final user = authState.userModel;
-      if (user == null) return AppRoutes.login;
+      if (user == null) return AppRoutes.roleSelect;
 
       // ── Admin Route Guard ──
       // Block non-admin users from any /admin/** path
@@ -91,8 +95,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null; // No redirect needed
     },
     routes: [
+      // ── Splash ────────────────────────────────────────────────────────
       GoRoute(path: AppRoutes.splash,      builder: (context, state) => const SplashScreen()),
       GoRoute(path: AppRoutes.onboarding,  builder: (context, state) => const OnboardingScreen()),
+
+      // ── Role Selection (Devika's UI — first screen for unauthenticated users) ──
+      GoRoute(path: AppRoutes.roleSelect,  builder: (context, state) => const RoleSelectScreen()),
+
+      // ── User Auth ─────────────────────────────────────────────────────
       GoRoute(path: AppRoutes.login,       builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: AppRoutes.otp,
@@ -102,6 +112,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(path: AppRoutes.register,    builder: (context, state) => const RegisterScreen()),
+
+      // ── Admin Auth (Devika's dedicated admin login) ────────────────────
+      GoRoute(path: AppRoutes.adminLogin,  builder: (context, state) => const AdminLoginScreen()),
+
+      // ── Shared / Deep-link routes ─────────────────────────────────────
       GoRoute(
         path: AppRoutes.tyreDetail,
         builder: (context, state) {
@@ -121,13 +136,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
 
-      // Public routes
+      // ── Public Pages ──────────────────────────────────────────────────
       GoRoute(path: AppRoutes.about,          builder: (context, state) => const CompanyAboutUsScreen()),
       GoRoute(path: AppRoutes.contact,        builder: (context, state) => const CompanyContactScreen()),
       GoRoute(path: AppRoutes.gallery,        builder: (context, state) => const CompanyGalleryScreen()),
       GoRoute(path: AppRoutes.legacyProducts, builder: (context, state) => const CompanyProductsScreen()),
 
-      // Admin Shell Route (protected by redirect above)
+      // ── Admin Shell (protected by redirect above) ─────────────────────
       ShellRoute(
         navigatorKey: _adminShellNavigatorKey,
         builder: (context, state, child) => AdminScaffold(child: child),
@@ -149,7 +164,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
-      // Customer Shell Route
+      // ── User Shell ────────────────────────────────────────────────────
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
         builder: (context, state, child) => MainScaffold(child: child),

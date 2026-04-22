@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../domain/providers/auth_provider.dart';
-import '../../../data/repositories/auth_repository.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../core/constants/app_constants.dart';
@@ -21,19 +20,52 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _showEmailForm = false;
   bool _isPasswordVisible = false;
 
+  // ── Devika's validation helpers ──
+  bool _isValidEmail(String email) =>
+      RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
+
+  String? _validatePassword(String password) {
+    if (password.length < 8) return 'Password must be at least 8 characters';
+    if (!password.contains(RegExp(r'[A-Z]'))) return 'Add at least 1 uppercase letter';
+    if (!password.contains(RegExp(r'[a-z]'))) return 'Add at least 1 lowercase letter';
+    if (!password.contains(RegExp(r'[0-9]'))) return 'Add at least 1 number';
+    if (!password.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>]'))) {
+      return 'Add at least 1 special character';
+    }
+    return null;
+  }
+
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   Future<void> _sendOtp() async {
     final phone = _phoneController.text.trim();
-    if (phone.length < 10) return;
-    final formattedPhone = phone.startsWith('+91') ? phone : '+91$phone';
+    final digits = phone.replaceAll(RegExp(r'^\+91'), '').replaceAll(RegExp(r'\s'), '');
+    if (digits.length != 10 || !RegExp(r'^[0-9]{10}$').hasMatch(digits)) {
+      _showSnack('Enter a valid 10-digit mobile number');
+      return;
+    }
+    final formattedPhone = '+91$digits';
     await ref.read(authProvider.notifier).sendOtp(formattedPhone, (verificationId) {
-      context.push(AppRoutes.otp, extra: verificationId);
+      if (context.mounted) context.push(AppRoutes.otp, extra: verificationId);
     });
   }
 
   Future<void> _signInEmail() async {
     final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-    if (email.isEmpty || password.isEmpty) return;
+    final password = _passwordController.text;
+
+    if (!_isValidEmail(email)) {
+      _showSnack('Enter a valid email address');
+      return;
+    }
+    final pwError = _validatePassword(password);
+    if (pwError != null) {
+      _showSnack(pwError);
+      return;
+    }
+
     await ref.read(authProvider.notifier).signInWithEmail(email, password);
   }
 
@@ -45,15 +77,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
-    // Auto-navigate on successful auth
+    // Auto-navigate on successful auth (Anurag's RBAC + Devika's admin guard)
     ref.listen<AuthState>(authProvider, (prev, next) {
       if (next.userModel != null && !next.isLoading) {
         final user = next.userModel!;
-        // If phone is missing (Google/Email user), complete profile first
-        if (user.phone.isEmpty) {
+        if (user.role == 'admin') {
+          // Admin used user login — sign out and show error (Devika's logic)
+          ref.read(authProvider.notifier).logout();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Admin accounts must use Admin Login.')),
+          );
+        } else if (user.phone.isEmpty && user.email.isEmpty) {
+          // New user — complete profile
           context.go(AppRoutes.register);
-        } else if (user.role == 'admin') {
-          context.go(AppRoutes.admin);
         } else {
           context.go(AppRoutes.home);
         }
@@ -61,6 +97,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -250,6 +294,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ],
 
+              const SizedBox(height: 24),
             ],
           ),
         ),

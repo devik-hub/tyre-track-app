@@ -20,10 +20,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
 
+  // ── Anurag: Google autofill ──
   @override
   void initState() {
     super.initState();
-    // Pre-fill with Google / existing Firebase Auth data
     final firebaseUser = FirebaseAuth.instance.currentUser;
     if (firebaseUser != null) {
       if (firebaseUser.displayName != null && firebaseUser.displayName!.isNotEmpty) {
@@ -43,17 +43,42 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     super.dispose();
   }
 
-  // For users who arrive via Phone OTP or Google (already authenticated, just need profile)
+  // ── Devika: Strong password validation ──
+  String? _validatePassword(String password) {
+    if (password.length < 8) return 'Use at least 8 characters';
+    if (!password.contains(RegExp(r'[A-Z]'))) return 'Add at least 1 uppercase letter (A-Z)';
+    if (!password.contains(RegExp(r'[a-z]'))) return 'Add at least 1 lowercase letter (a-z)';
+    if (!password.contains(RegExp(r'[0-9]'))) return 'Add at least 1 number (0-9)';
+    if (!password.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>_\-+=\[\]\\/]'))) {
+      return 'Add at least 1 special character (e.g. @, #, !)';
+    }
+    return null;
+  }
+
+  Map<String, bool> _getPasswordRequirements(String password) {
+    return {
+      '8+ characters': password.length >= 8,
+      'Uppercase letter': password.contains(RegExp(r'[A-Z]')),
+      'Lowercase letter': password.contains(RegExp(r'[a-z]')),
+      'Number': password.contains(RegExp(r'[0-9]')),
+      'Special character': password.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>_\-+=\[\]\\/]')),
+    };
+  }
+
+  // ── Anurag: Merge-safe profile completion with RBAC redirect ──
   Future<void> _completeProfile() async {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
-    if (name.isEmpty) return;
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your full name')),
+      );
+      return;
+    }
 
     final user = ref.read(authRepositoryProvider).currentUser;
     if (user != null) {
       await ref.read(authProvider.notifier).registerUser(name, user.phoneNumber ?? '', email);
-      // After registerUser completes, authState.userModel has the correct
-      // Firestore role. The router's redirect guard handles navigation.
       if (mounted) {
         final updatedUser = ref.read(authProvider).userModel;
         if (updatedUser != null && updatedUser.role == 'admin') {
@@ -65,20 +90,32 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
   }
 
-  // For brand new email/password signup
   Future<void> _registerWithEmail() async {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-    if (name.isEmpty || email.isEmpty || password.length < 6) {
+    final password = _passwordController.text;
+
+    if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields. Password must be 6+ characters.')),
+        const SnackBar(content: Text('Please enter your full name')),
+      );
+      return;
+    }
+    if (email.isEmpty || !email.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid email address')),
+      );
+      return;
+    }
+    final passwordError = _validatePassword(password);
+    if (passwordError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(passwordError)),
       );
       return;
     }
 
     await ref.read(authProvider.notifier).registerWithEmail(email, password);
-    // After Firebase creates the account, save the profile name
     final user = ref.read(authRepositoryProvider).currentUser;
     if (user != null) {
       await ref.read(authProvider.notifier).registerUser(name, '', email);
@@ -146,22 +183,55 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               ),
             ),
 
-            // ─── Password (only for new email signups) ───
+            // ─── Password with live checklist (Devika's UI) ───
             if (!isAlreadyAuthed) ...[
               const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                obscureText: !_isPasswordVisible,
-                decoration: InputDecoration(
-                  labelText: 'Password *',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
-                    onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
-                  ),
-                  helperText: 'Minimum 6 characters',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                ),
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _passwordController,
+                builder: (context, value, _) {
+                  final reqs = _getPasswordRequirements(value.text);
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: !_isPasswordVisible,
+                        decoration: InputDecoration(
+                          labelText: 'Password *',
+                          prefixIcon: const Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(
+                            icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
+                            onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                          ),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                      if (value.text.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        ...reqs.entries.map((entry) => Padding(
+                          padding: const EdgeInsets.only(bottom: 3),
+                          child: Row(
+                            children: [
+                              Icon(
+                                entry.value ? Icons.check_circle : Icons.radio_button_unchecked,
+                                size: 14,
+                                color: entry.value ? Colors.green : Colors.grey,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                entry.key,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: entry.value ? Colors.green : Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )),
+                      ],
+                    ],
+                  );
+                },
               ),
             ],
             const SizedBox(height: 24),
