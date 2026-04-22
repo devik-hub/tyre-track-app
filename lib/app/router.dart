@@ -38,6 +38,7 @@ import '../presentation/screens/public/gallery_screen.dart';
 import '../presentation/screens/public/products_screen.dart';
 import '../presentation/screens/admin/order_detail_screen.dart';
 import '../presentation/screens/customer/order_tracker_screen.dart';
+import '../presentation/screens/remold_service/book_service_screen.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey  = GlobalKey<NavigatorState>(debugLabel: 'root');
 final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
@@ -133,6 +134,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final orderId = state.extra as String? ?? '';
           return OrderTrackerScreen(orderId: orderId);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.bookService,
+        builder: (context, state) {
+          final serviceType = state.extra as String? ?? 'retreading';
+          return BookServiceScreen(serviceType: serviceType);
         },
       ),
 

@@ -42,5 +42,6 @@ abstract class AppRoutes {
 
   // ─── Customer sub-screens ───
   static const String orderTracker    = '/order-tracker';
+  static const String bookService     = '/book-service';
 }
 

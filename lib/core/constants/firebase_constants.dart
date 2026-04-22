@@ -9,6 +9,7 @@ class FirebaseConstants {
   static const String supportTicketsCollection  = 'support_tickets';
   // Shreya: admin service toggles, vehicle categories, OTP rate limits
   static const String serviceAvailabilityCollection = 'service_availability';
+  static const String servicesCollection             = 'services';
   static const String vehicleCategoriesCollection   = 'vehicle_categories';
   static const String otpRateLimitsCollection        = 'otp_rate_limits';
   // Chaitanya: search analytics and config

@@ -49,6 +49,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
     });
   }
 
+  // ─── Force Re-fetch (Fix #2: Auth State Sync) ───
+  /// Invalidates the cached UserModel and re-fetches the fresh Firestore
+  /// document for the current Firebase Auth user. Call this after any
+  /// operation that mutates the Firestore user doc outside the auth listener.
+  Future<void> refreshUserData() async {
+    final user = _authRepo.currentUser;
+    if (user != null) {
+      state = state.copyWith(isLoading: true);
+      final userModel = await _authRepo.ensureUserDocument(user);
+      state = state.copyWith(userModel: userModel, isLoading: false);
+    }
+  }
+
   // ─── Phone OTP ───
   Future<void> sendOtp(String phone, Function(String) onCodeSent) async {
     state = state.copyWith(isLoading: true, clearError: true);
@@ -98,12 +111,26 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Fix #4: If email already exists in Auth, sign in instead of erroring out.
+  /// After sign-in, ensureUserDocument (in _init listener) will create the
+  /// Firestore doc if it was missing.
   Future<void> registerWithEmail(String email, String password) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       await _authRepo.registerWithEmail(email, password);
     } on FirebaseAuthException catch (e) {
-      state = state.copyWith(isLoading: false, error: e.message);
+      if (e.code == 'email-already-in-use') {
+        // Account exists in Auth but user tried to "register" again.
+        // Sign them in instead — _init listener will call ensureUserDocument
+        // to create/read the Firestore doc automatically.
+        try {
+          await _authRepo.signInWithEmail(email, password);
+        } on FirebaseAuthException catch (signInError) {
+          state = state.copyWith(isLoading: false, error: signInError.message);
+        }
+      } else {
+        state = state.copyWith(isLoading: false, error: e.message);
+      }
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -129,6 +156,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Updates profile fields via merge — never overwrites the 'role' field.
   /// The returned UserModel includes the Firestore-persisted role, so the
   /// router redirect immediately evaluates correctly after this call.
+  /// Throws on Firestore failure so callers can guard navigation.
   Future<void> registerUser(String name, String phone, String email) async {
      state = state.copyWith(isLoading: true, clearError: true);
      try {
@@ -145,6 +173,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
        }
      } catch (e) {
        state = state.copyWith(isLoading: false, error: e.toString());
+       rethrow; // Let the UI catch this to prevent navigation
      }
   }
 

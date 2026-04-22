@@ -3,52 +3,73 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class BookingModel {
   final String bookingId;
   final String customerId;
-  final String vehicleId;
   final String serviceType;
+  final String status;
+  final DateTime createdAt;
+
+  // ─── Tyre Details ───
+  final String tyreBrand;
+  final int quantity;
+
+  // ─── Location & Contact ───
+  final String location;
+  final String contactNumber;
+  final String receiverName;
+
+  // ─── Legacy fields (kept for backward-compat) ───
+  final String vehicleId;
   final List<String> tyrePositions;
   final DateTime preferredDate;
   final String preferredTimeSlot;
   final double? currentTreadDepth;
   final String? issueDescription;
   final List<String>? tyreImages;
-  final String status;
   final String? assignedTechnician;
   final String? adminNotes;
-  final DateTime createdAt;
 
   BookingModel({
     required this.bookingId,
     required this.customerId,
-    required this.vehicleId,
     required this.serviceType,
-    required this.tyrePositions,
-    required this.preferredDate,
-    required this.preferredTimeSlot,
+    this.status = 'pending',
+    required this.createdAt,
+    this.tyreBrand = '',
+    this.quantity = 1,
+    this.location = '',
+    this.contactNumber = '',
+    this.receiverName = '',
+    this.vehicleId = '',
+    this.tyrePositions = const [],
+    DateTime? preferredDate,
+    this.preferredTimeSlot = '',
     this.currentTreadDepth,
     this.issueDescription,
     this.tyreImages,
-    this.status = 'pending',
     this.assignedTechnician,
     this.adminNotes,
-    required this.createdAt,
-  });
+  }) : preferredDate = preferredDate ?? DateTime.now();
 
   factory BookingModel.fromMap(Map<String, dynamic> data, String documentId) {
     return BookingModel(
       bookingId: documentId,
       customerId: data['customerId'] ?? '',
-      vehicleId: data['vehicleId'] ?? '',
       serviceType: data['serviceType'] ?? 'retreading',
+      status: data['status'] ?? 'pending',
+      createdAt: _parseDate(data['createdAt']),
+      tyreBrand: data['tyreBrand'] ?? '',
+      quantity: data['quantity'] ?? 1,
+      location: data['location'] ?? '',
+      contactNumber: data['contactNumber'] ?? '',
+      receiverName: data['receiverName'] ?? '',
+      vehicleId: data['vehicleId'] ?? '',
       tyrePositions: List<String>.from(data['tyrePositions'] ?? []),
       preferredDate: _parseDate(data['preferredDate']),
-      preferredTimeSlot: data['preferredTimeSlot'] ?? 'morning',
+      preferredTimeSlot: data['preferredTimeSlot'] ?? '',
       currentTreadDepth: data['currentTreadDepth'] != null ? (data['currentTreadDepth'] as num).toDouble() : null,
       issueDescription: data['issueDescription'],
       tyreImages: data['tyreImages'] != null ? List<String>.from(data['tyreImages']) : null,
-      status: data['status'] ?? 'pending',
       assignedTechnician: data['assignedTechnician'],
       adminNotes: data['adminNotes'],
-      createdAt: _parseDate(data['createdAt']),
     );
   }
 
@@ -56,18 +77,23 @@ class BookingModel {
     return {
       'bookingId': bookingId,
       'customerId': customerId,
-      'vehicleId': vehicleId,
       'serviceType': serviceType,
+      'status': status,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'tyreBrand': tyreBrand,
+      'quantity': quantity,
+      'location': location,
+      'contactNumber': contactNumber,
+      'receiverName': receiverName,
+      'vehicleId': vehicleId,
       'tyrePositions': tyrePositions,
       'preferredDate': Timestamp.fromDate(preferredDate),
       'preferredTimeSlot': preferredTimeSlot,
       'currentTreadDepth': currentTreadDepth,
       'issueDescription': issueDescription,
       'tyreImages': tyreImages,
-      'status': status,
       'assignedTechnician': assignedTechnician,
       'adminNotes': adminNotes,
-      'createdAt': Timestamp.fromDate(createdAt),
     };
   }
 

@@ -7,7 +7,11 @@ import '../../../app/routes/app_routes.dart';
 import '../../../core/constants/app_constants.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+  /// When true, the screen verifies the user has role == 'admin' after login.
+  /// If not, it signs out and shows an access-denied message.
+  final bool isAdminLogin;
+
+  const LoginScreen({super.key, this.isAdminLogin = false});
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -20,7 +24,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _showEmailForm = false;
   bool _isPasswordVisible = false;
 
-  // ── Devika's validation helpers ──
+  bool get _isAdminLogin => widget.isAdminLogin;
+
+  // ── Validation helpers ──
   bool _isValidEmail(String email) =>
       RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
 
@@ -77,21 +83,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
-    // Auto-navigate on successful auth (Anurag's RBAC + Devika's admin guard)
+    // ── Reactive navigation after auth completes ──
     ref.listen<AuthState>(authProvider, (prev, next) {
       if (next.userModel != null && !next.isLoading) {
         final user = next.userModel!;
-        if (user.role == 'admin') {
-          // Admin used user login — sign out and show error (Devika's logic)
-          ref.read(authProvider.notifier).logout();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Admin accounts must use Admin Login.')),
-          );
-        } else if (user.phone.isEmpty && user.email.isEmpty) {
-          // New user — complete profile
-          context.go(AppRoutes.register);
+
+        if (_isAdminLogin) {
+          // Admin path: verify the Firestore role
+          if (user.role == 'admin') {
+            context.go(AppRoutes.admin);
+          } else {
+            // Not an admin — sign out and show error
+            ref.read(authProvider.notifier).logout();
+            _showSnack('Access Denied: You do not have administrator privileges.');
+          }
         } else {
-          context.go(AppRoutes.home);
+          // Customer path
+          if (user.role == 'admin') {
+            // Admin logged in via customer path — route to admin dashboard
+            context.go(AppRoutes.admin);
+          } else if (user.phone.isEmpty && user.email.isEmpty) {
+            // New user — complete profile
+            context.go(AppRoutes.register);
+          } else {
+            context.go(AppRoutes.home);
+          }
         }
       }
     });
@@ -114,17 +130,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const SizedBox(height: 40),
 
               // ─── Logo & Branding ───
-              Image.asset('assets/images/logo.png', height: 80,
-                  errorBuilder: (c, e, s) => const Icon(Icons.tire_repair, size: 80, color: AppColors.mrfRed)),
+              Icon(
+                _isAdminLogin ? Icons.admin_panel_settings : Icons.tire_repair,
+                size: 80,
+                color: AppColors.mrfRed,
+              ),
               const SizedBox(height: 12),
               Text(
-                AppConstants.appName,
+                _isAdminLogin ? 'Admin Access' : AppConstants.appName,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold, color: AppColors.mrfRed),
               ),
               Text(
-                AppConstants.appTagline,
+                _isAdminLogin
+                    ? 'Restricted to authorised administrators only'
+                    : AppConstants.appTagline,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey),
               ),
@@ -153,7 +174,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               OutlinedButton.icon(
                 onPressed: authState.isLoading ? null : _signInGoogle,
                 icon: const Icon(Icons.g_mobiledata, size: 24, color: Colors.red),
-                label: const Text('Continue with Google'),
+                label: Text(_isAdminLogin ? 'Sign in with Google' : 'Continue with Google'),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   side: BorderSide(color: Colors.grey.shade300),
@@ -257,7 +278,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
-                    labelText: 'Email Address',
+                    labelText: _isAdminLogin ? 'Admin Email' : 'Email Address',
                     prefixIcon: const Icon(Icons.email_outlined),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                   ),
@@ -285,13 +306,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
                   child: authState.isLoading
                       ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('Sign In'),
+                      : Text(_isAdminLogin ? 'Sign In as Admin' : 'Sign In'),
                 ),
-                const SizedBox(height: 8),
-                TextButton(
-                  onPressed: () => context.push(AppRoutes.register),
-                  child: const Text("Don't have an account? Register", style: TextStyle(color: AppColors.mrfRed, fontSize: 13)),
-                ),
+                if (!_isAdminLogin) ...[
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () => context.push(AppRoutes.register),
+                    child: const Text("Don't have an account? Register", style: TextStyle(color: AppColors.mrfRed, fontSize: 13)),
+                  ),
+                ],
               ],
 
               const SizedBox(height: 24),

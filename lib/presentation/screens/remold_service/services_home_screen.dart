@@ -67,7 +67,7 @@ class ServicesHomeScreen extends ConsumerWidget {
                       ),
                     ),
                     trailing: ElevatedButton(
-                      onPressed: isAvailable ? () {} : null,
+                      onPressed: isAvailable ? () => context.push(AppRoutes.bookService, extra: serviceKey) : null,
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(80, 36),
                         padding: const EdgeInsets.symmetric(horizontal: 16),

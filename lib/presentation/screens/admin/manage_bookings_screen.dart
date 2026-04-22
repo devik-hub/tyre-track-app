@@ -132,7 +132,15 @@ class _ManageBookingsScreenState extends ConsumerState<ManageBookingsScreen> {
             ),
             const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Divider(height: 1, color: Colors.white10)),
             _infoRow(Icons.build, 'Service', booking.serviceType),
-            _infoRow(Icons.calendar_today, 'Date', '${booking.preferredDate.day}/${booking.preferredDate.month}/${booking.preferredDate.year} • ${booking.preferredTimeSlot}'),
+            if (booking.tyreBrand.isNotEmpty)
+              _infoRow(Icons.tire_repair, 'Tyre', '${booking.tyreBrand} × ${booking.quantity}'),
+            if (booking.location.isNotEmpty)
+              _infoRow(Icons.location_on, 'Location', booking.location),
+            if (booking.receiverName.isNotEmpty)
+              _infoRow(Icons.person, 'Receiver', booking.receiverName),
+            if (booking.contactNumber.isNotEmpty)
+              _infoRow(Icons.phone, 'Contact', booking.contactNumber),
+            _infoRow(Icons.calendar_today, 'Booked', '${booking.createdAt.day}/${booking.createdAt.month}/${booking.createdAt.year}'),
             if (booking.assignedTechnician != null && booking.assignedTechnician!.isNotEmpty)
               _infoRow(Icons.engineering, 'Technician', booking.assignedTechnician!),
             if (booking.adminNotes != null && booking.adminNotes!.isNotEmpty)

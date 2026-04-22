@@ -78,13 +78,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     final user = ref.read(authRepositoryProvider).currentUser;
     if (user != null) {
-      await ref.read(authProvider.notifier).registerUser(name, user.phoneNumber ?? '', email);
-      if (mounted) {
-        final updatedUser = ref.read(authProvider).userModel;
-        if (updatedUser != null && updatedUser.role == 'admin') {
-          context.go(AppRoutes.admin);
-        } else {
-          context.go(AppRoutes.home);
+      try {
+        await ref.read(authProvider.notifier).registerUser(name, user.phoneNumber ?? '', email);
+        if (mounted) {
+          final updatedUser = ref.read(authProvider).userModel;
+          if (updatedUser != null && updatedUser.role == 'admin') {
+            context.go(AppRoutes.admin);
+          } else {
+            context.go(AppRoutes.home);
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Profile save failed: $e')),
+          );
         }
       }
     }
@@ -116,15 +124,28 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
 
     await ref.read(authProvider.notifier).registerWithEmail(email, password);
+
+    // Check if auth itself failed (error set by registerWithEmail)
+    final authError = ref.read(authProvider).error;
+    if (authError != null) return; // Error already visible in UI
+
     final user = ref.read(authRepositoryProvider).currentUser;
     if (user != null) {
-      await ref.read(authProvider.notifier).registerUser(name, '', email);
-      if (mounted) {
-        final updatedUser = ref.read(authProvider).userModel;
-        if (updatedUser != null && updatedUser.role == 'admin') {
-          context.go(AppRoutes.admin);
-        } else {
-          context.go(AppRoutes.home);
+      try {
+        await ref.read(authProvider.notifier).registerUser(name, '', email);
+        if (mounted) {
+          final updatedUser = ref.read(authProvider).userModel;
+          if (updatedUser != null && updatedUser.role == 'admin') {
+            context.go(AppRoutes.admin);
+          } else {
+            context.go(AppRoutes.home);
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Profile save failed: $e')),
+          );
         }
       }
     }
