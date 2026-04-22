@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class BookServiceScreen extends StatefulWidget {
@@ -40,6 +41,9 @@ class _BookServiceScreenState extends State<BookServiceScreen> {
 
     setState(() => _isSubmitting = true);
     try {
+      if (FirebaseAuth.instance.currentUser == null) return;
+      print('Writing booking for uid: ${FirebaseAuth.instance.currentUser!.uid}');
+
       await FirebaseFirestore.instance.collection('bookings').add({
         'tyreId': widget.tyreId,
         'serviceType': _serviceType,

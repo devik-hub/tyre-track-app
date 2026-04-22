@@ -85,6 +85,8 @@ class AuthRepository {
         googleProvider.addScope('profile');
         return await _auth.signInWithPopup(googleProvider);
       } else {
+        // Force sign out to ensure account picker shows up if previous session was invalid
+        await _googleSignIn.signOut();
         // On mobile, use google_sign_in package (reads from google-services.json)
         final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
         if (googleUser == null) return null;

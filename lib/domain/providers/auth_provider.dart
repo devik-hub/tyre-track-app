@@ -3,9 +3,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/otp_rate_limit_repository.dart';
 import '../../data/models/user_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'user_role_provider.dart';
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   return AuthNotifier(
+    ref,
     ref.read(authRepositoryProvider),
     ref.read(otpRateLimitRepositoryProvider),
   );
@@ -28,10 +31,11 @@ class AuthState {
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
+  final Ref _ref;
   final AuthRepository _authRepo;
   final OtpRateLimitRepository _otpRateLimitRepo;
 
-  AuthNotifier(this._authRepo, this._otpRateLimitRepo) : super(AuthState(isLoading: true)) {
+  AuthNotifier(this._ref, this._authRepo, this._otpRateLimitRepo) : super(AuthState(isLoading: true)) {
     _init();
   }
 
@@ -150,5 +154,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> logout() async {
     await _authRepo.signOut();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('uid');
+    await prefs.remove('role');
+    await prefs.remove('email');
+    await prefs.remove('token');
+    _ref.invalidate(userRoleProvider);
   }
 }

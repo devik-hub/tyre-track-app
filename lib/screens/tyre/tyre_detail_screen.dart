@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tyre_management/utils/tyre_utils.dart';
 
 class TyreDetailScreen extends StatelessWidget {
@@ -103,11 +104,20 @@ class TyreDetailScreen extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () => Navigator.pushNamed(
-                      context,
-                      '/book_service',
-                      arguments: tyreId,
-                    ),
+                    onPressed: () {
+                      print('🟢 INITIAL BOOK BUTTON TAPPED');
+                      if (FirebaseAuth.instance.currentUser == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Please wait for session to load')),
+                        );
+                        return;
+                      }
+                      Navigator.pushNamed(
+                        context,
+                        '/book_service',
+                        arguments: tyreId,
+                      );
+                    },
                     child: const Text('Book Service'),
                   ),
                 ),

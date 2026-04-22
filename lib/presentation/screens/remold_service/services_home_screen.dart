@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../domain/providers/service_availability_provider.dart';
+import '../../../domain/providers/auth_provider.dart';
 
 class ServicesHomeScreen extends ConsumerWidget {
   const ServicesHomeScreen({super.key});
@@ -66,14 +67,31 @@ class ServicesHomeScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    trailing: ElevatedButton(
-                      onPressed: isAvailable ? () {} : null,
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size(80, 36),
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        disabledBackgroundColor: Colors.grey.shade300,
+                    trailing: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: isAvailable ? () {
+                        final serviceName = service['title'];
+                        print('🟢 BOOK BUTTON TAPPED FOR: $serviceName');
+                        final user = ref.read(authProvider).userModel;
+                        if (user == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Please wait for session to load or log in')),
+                          );
+                          return;
+                        }
+                        context.push(AppRoutes.bookService);
+                      } : null,
+                      child: IgnorePointer(
+                        child: ElevatedButton(
+                          onPressed: isAvailable ? () {} : null, // Handled by GestureDetector
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(80, 36),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            disabledBackgroundColor: Colors.grey.shade300,
+                          ),
+                          child: Text(isAvailable ? 'Book' : 'Closed'),
+                        ),
                       ),
-                      child: Text(isAvailable ? 'Book' : 'Closed'),
                     ),
                   ),
                 ),
