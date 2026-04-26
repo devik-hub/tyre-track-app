@@ -16,7 +16,7 @@ class OrderRepository{
   /// Admin: All orders ordered by createdAt in descending order
   Stream<List<OrderModel>> streamAllOrders(){
     return _orders
-        .orderBy('createdAt', descending: true)
+        .orderBy("createdAt", descending: true)
         .snapshots()
         .map((snap) {
           try{
@@ -34,7 +34,7 @@ class OrderRepository{
         });
   }
 
-  /// Admin: COD orders where cash has not yet been collected
+  /// Admin: COD orders where payment is pending
   Stream<List<OrderModel>> streamCodPendingOrders(){
     return _orders
         .where('paymentMethod', isEqualTo: 'cod')
@@ -75,14 +75,14 @@ class OrderRepository{
         });
   }
 
-  /// Single order by ID — real-time
-  Stream<OrderModel?> streamOrderById(String orderId) {
+  /// Single order by ID in real-time
+  Stream<OrderModel?> streamOrderById(String orderId){
     return _orders
         .doc(orderId)
         .snapshots()
         .map((doc) {
           if(!doc.exists){
-            print('⚠streamOrderById: order $orderId not found');
+            print('streamOrderById: order $orderId not found');
             return null;
           }
           try{
@@ -250,7 +250,7 @@ class OrderRepository{
     }
   }
 
-  /// Admin updates order status + timestamps the transition
+  /// Admin updates order status and gives timestamp
   Future<void> updateOrderStatus(String orderId, String newStatus) async{
     final Map<String, dynamic> updates = {
       'orderStatus': newStatus,
@@ -280,7 +280,7 @@ class OrderRepository{
     }
   }
 
-  /// Legacy create — kept for backwards compatibility
+  /// Old create order code
   Future<void> createOrder(OrderModel order) async {
     await _orders.doc(order.orderId).set(order.toMap());
     print('createOrder: ${order.orderId}');

@@ -3,7 +3,7 @@ import '../../data/models/order_model.dart';
 import '../../data/repositories/order_repository.dart';
 import 'auth_provider.dart';
 
-/// All customer orders for a given customerId — real-time
+/// All customer orders for a given customerId in real-time
 final customerOrdersStreamProvider = StreamProvider.family<List<OrderModel>, String>((ref, customerId){
   if(customerId.isEmpty) return Stream.value([]);
   return ref
@@ -27,7 +27,7 @@ final customerOrderDetailProvider = StreamProvider.family<OrderModel?, String>((
       });
 });
 
-/// Convenience: current logged-in customer's orders (uses auth state)
+/// Current logged-in customer's orders (uses auth state)
 final myOrdersProvider = StreamProvider<List<OrderModel>>((ref){
   final user = ref.watch(authProvider).userModel;
   if(user==null) return Stream.value([]);

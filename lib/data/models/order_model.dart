@@ -1,13 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// ─── OrderItem ─────────────────────────────────────────────────────────────
+// Order Item
 class OrderItem {
   final String productId;
   final String productName;
   final int quantity;
   final int unitPrice;   // paise
   final int totalPrice;  // paise
-  final String category; // "tyre" | "casing"
+  final String category; // tyre or casing
 
   const OrderItem({
     required this.productId,
@@ -43,7 +43,7 @@ class OrderItem {
   double get totalPriceRupees => totalPrice / 100.0;
 }
 
-// ─── DeliveryAddress ───────────────────────────────────────────────────────
+// DeliveryAddress
 class DeliveryAddress {
   final String recipientName;
   final String phone;
@@ -84,12 +84,12 @@ class DeliveryAddress {
   };
 }
 
-// ─── OrderModel ────────────────────────────────────────────────────────────
+// Order Model
 class OrderModel {
   final String orderId;
   final String customerId;
 
-  // Denormalized customer fields — always read these as fallback
+  // Denormalized customer fields
   final String customerName;
   final String customerPhone;
   final String customerEmail;
@@ -101,14 +101,14 @@ class OrderModel {
   final int deliveryCharges;   // paise
   final int finalAmount;       // paise
 
-  final String paymentMethod;  // "razorpay" | "cod"
-  final String paymentStatus;  // "pending" | "paid" | "collected" | "failed" | "refunded"
+  final String paymentMethod;  // Razorpay or COD
+  final String paymentStatus;  // pending, paid, collected, failed, refunded
   final String? paymentId;
   final String? razorpayOrderId;
 
   final DeliveryAddress deliveryAddress;
 
-  final String orderStatus;    // "pending_confirmation" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled"
+  final String orderStatus;    // pending_confirmation, confirmed, processing, shipped, delivered, cancelled
 
   final DateTime createdAt;
   final DateTime? confirmedAt;
@@ -151,7 +151,7 @@ class OrderModel {
     this.collectedBy,
   });
 
-  // ─── Firestore → Model ───
+  // Firestore → Model
   factory OrderModel.fromFirestore(DocumentSnapshot doc) {
     final d = (doc.data() as Map<String, dynamic>?) ?? {};
     return OrderModel._fromMap(d, doc.id);
@@ -185,7 +185,7 @@ class OrderModel {
         ? DeliveryAddress.fromMap(rawAddr)
         : const DeliveryAddress();
 
-    // Legacy `status` field → map to `orderStatus`
+    // Legacy status field → map to `orderStatus`
     final legacyStatus = d['status'] as String? ?? '';
     String _mapStatus(String s) {
       switch (s) {
@@ -229,7 +229,7 @@ class OrderModel {
     );
   }
 
-  // ─── Model → Firestore ───
+  // Model → Firestore
   Map<String, dynamic> toMap() => {
     'orderId':         orderId,
     'customerId':      customerId,
@@ -259,7 +259,7 @@ class OrderModel {
     'collectedBy':     collectedBy,
   };
 
-  // ─── Helpers ───
+  // Helpers
   double get finalAmountRupees => finalAmount / 100.0;
   double get totalAmountRupees => totalAmount / 100.0;
   bool   get isCod             => paymentMethod == 'cod';
