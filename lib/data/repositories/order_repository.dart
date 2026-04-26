@@ -3,81 +3,74 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/constants/firebase_constants.dart';
 import '../models/order_model.dart';
-import '../models/product_model.dart';
 import '../models/user_model.dart';
 
 final orderRepositoryProvider = Provider<OrderRepository>((ref) => OrderRepository());
 
-class OrderRepository {
+class OrderRepository{
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  CollectionReference get _orders =>
-      _db.collection(FirebaseConstants.ordersCollection);
-  CollectionReference get _products =>
-      _db.collection(FirebaseConstants.productsCollection);
+  CollectionReference get _orders => _db.collection(FirebaseConstants.ordersCollection);
+  CollectionReference get _products => _db.collection(FirebaseConstants.productsCollection);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // STREAMS — real-time, never .get()
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  /// Admin: ALL orders ordered by createdAt desc
-  Stream<List<OrderModel>> streamAllOrders() {
+  /// Admin: All orders ordered by createdAt in descending order
+  Stream<List<OrderModel>> streamAllOrders(){
     return _orders
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snap) {
-          try {
+          try{
             return snap.docs
                 .map((doc) => OrderModel.fromFirestore(doc))
                 .toList();
-          } catch (e, s) {
-            print('❌ streamAllOrders map error: $e\n$s');
+          } catch(e,s){
+            print('streamAllOrders map error: $e\n$s');
             return <OrderModel>[];
           }
         })
-        .handleError((e, s) {
-          print('❌ streamAllOrders stream error: $e\n$s');
+        .handleError((e,s){
+          print('streamAllOrders stream error: $e\n$s');
           return <OrderModel>[];
         });
   }
 
   /// Admin: COD orders where cash has not yet been collected
-  Stream<List<OrderModel>> streamCodPendingOrders() {
+  Stream<List<OrderModel>> streamCodPendingOrders(){
     return _orders
-        .where('paymentMethod',  isEqualTo: 'cod')
-        .where('paymentStatus',  isEqualTo: 'pending')
+        .where('paymentMethod', isEqualTo: 'cod')
+        .where('paymentStatus', isEqualTo: 'pending')
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snap) {
-          try {
+          try{
             return snap.docs.map((d) => OrderModel.fromFirestore(d)).toList();
-          } catch (e) {
-            print('❌ streamCodPendingOrders map error: $e');
+          } catch(e){
+            print('streamCodPendingOrders map error: $e');
             return <OrderModel>[];
           }
         })
-        .handleError((e) {
-          print('❌ streamCodPendingOrders stream error: $e');
+        .handleError((e){
+          print('streamCodPendingOrders stream error: $e');
           return <OrderModel>[];
         });
   }
 
   /// Admin: Filter orders by orderStatus
-  Stream<List<OrderModel>> streamOrdersByStatus(String status) {
+  Stream<List<OrderModel>> streamOrdersByStatus(String status){
     return _orders
         .where('orderStatus', isEqualTo: status)
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snap) {
-          try {
+          try{
             return snap.docs.map((d) => OrderModel.fromFirestore(d)).toList();
-          } catch (e) {
-            print('❌ streamOrdersByStatus map error: $e');
+          } catch(e){
+            print('streamOrdersByStatus map error: $e');
             return <OrderModel>[];
           }
         })
-        .handleError((e) {
-          print('❌ streamOrdersByStatus stream error: $e');
+        .handleError((e){
+          print('streamOrdersByStatus stream error: $e');
           return <OrderModel>[];
         });
   }
@@ -88,67 +81,63 @@ class OrderRepository {
         .doc(orderId)
         .snapshots()
         .map((doc) {
-          if (!doc.exists) {
-            print('⚠️ streamOrderById: order $orderId not found');
+          if(!doc.exists){
+            print('⚠streamOrderById: order $orderId not found');
             return null;
           }
-          try {
+          try{
             return OrderModel.fromFirestore(doc);
-          } catch (e) {
-            print('❌ streamOrderById parse error: $e');
+          } catch(e){
+            print('streamOrderById parse error: $e');
             return null;
           }
         })
-        .handleError((e) {
-          print('❌ streamOrderById stream error: $e');
+        .handleError((e){
+          print('streamOrderById stream error: $e');
           return null;
         });
   }
 
   /// Customer: My orders — real-time
-  Stream<List<OrderModel>> streamUserOrders(String customerId) {
+  Stream<List<OrderModel>> streamUserOrders(String customerId){
     return _orders
         .where('customerId', isEqualTo: customerId)
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snap) {
-          try {
+          try{
             return snap.docs.map((d) => OrderModel.fromFirestore(d)).toList();
-          } catch (e) {
-            print('❌ streamUserOrders map error: $e');
+          } catch(e){
+            print('streamUserOrders map error: $e');
             return <OrderModel>[];
           }
         })
-        .handleError((e) {
-          print('❌ streamUserOrders stream error: $e');
+        .handleError((e){
+          print('streamUserOrders stream error: $e');
           return <OrderModel>[];
         });
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // BUG #3 FIX — Atomic checkout with stock reduction
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  /// Creates an order AND atomically decrements stock for every item.
-  /// Throws descriptive Exception if any product has insufficient stock.
+  /// Creates an order and decreases stock for every item.
+  /// Sends notice if any product has insufficient stock.
   /// Uses Firestore transaction — all-or-nothing.
   Future<String> checkoutAtomicWithStockReduction({
     required List<OrderItem> items,
     required UserModel customer,
-    required String paymentMethod,    // "razorpay" | "cod"
-    required String paymentStatus,    // "pending" | "paid"
+    required String paymentMethod,    // Razorpay or COD
+    required String paymentStatus,    // Pending or Paid
     String? paymentId,
     String? razorpayOrderId,
     DeliveryAddress? deliveryAddress,
-    int gstAmount        = 0,
-    int deliveryCharges  = 0,
-  }) async {
+    int gstAmount = 0,
+    int deliveryCharges = 0,
+  }) async{
     final orderId = const Uuid().v4();
-    print('📝 Starting atomic checkout for order $orderId (${items.length} items)');
+    print('Starting atomic checkout for order $orderId (${items.length} items)');
 
-    try {
-      await _db.runTransaction((txn) async {
-        // ── Step 1: Read all product docs inside transaction ──────────────
+    try{
+      await _db.runTransaction((txn) async{
+        // Step 1: Read all product docs inside transaction
         final productRefs = items
             .map((item) => _products.doc(item.productId))
             .toList();
@@ -157,12 +146,12 @@ class OrderRepository {
           productRefs.map((ref) => txn.get(ref)),
         );
 
-        // ── Step 2: Validate stock for every item ─────────────────────────
-        for (int i = 0; i < items.length; i++) {
+        // Step 2: Validate stock for every item
+        for(int i=0;i<items.length;i++){
           final snap = productSnaps[i];
           final item = items[i];
 
-          if (!snap.exists) {
+          if(!snap.exists){
             throw Exception(
               'Product "${item.productName}" (${item.productId}) no longer exists.',
             );
@@ -171,18 +160,18 @@ class OrderRepository {
           final data = snap.data() as Map<String, dynamic>;
           final currentStock = (data['stockQuantity'] as num?)?.toInt() ?? 0;
 
-          if (currentStock < item.quantity) {
+          if(currentStock < item.quantity){
             final name = data['name'] as String? ?? item.productName;
             throw Exception(
               'Insufficient stock for "$name". '
               'Available: $currentStock, Requested: ${item.quantity}',
             );
           }
-          print('✅ Stock OK for ${item.productName}: $currentStock available, ${item.quantity} requested');
+          print('Stock OK for ${item.productName}: $currentStock available, ${item.quantity} requested');
         }
 
-        // ── Step 3: Decrement stock for every item ────────────────────────
-        for (int i = 0; i < items.length; i++) {
+        // Step 3: Decrement stock for every item
+        for(int i=0;i<items.length;i++){
           final snap = productSnaps[i];
           final item = items[i];
           final data = snap.data() as Map<String, dynamic>;
@@ -193,14 +182,14 @@ class OrderRepository {
             'stockQuantity': newStock,
             'updatedAt': FieldValue.serverTimestamp(),
           });
-          print('📝 Decremented stock for ${item.productName}: $currentStock → $newStock');
+          print('Decremented stock for ${item.productName}: $currentStock → $newStock');
         }
 
-        // ── Step 4: Calculate totals ──────────────────────────────────────
-        final totalAmount = items.fold<int>(0, (sum, i) => sum + i.totalPrice);
+        // Step 4: Calculate totals
+        final totalAmount = items.fold<int>(0, (sum,i) => sum + i.totalPrice);
         final finalAmount = totalAmount + gstAmount + deliveryCharges;
 
-        // ── Step 5: Write order document ──────────────────────────────────
+        // Step 5: Write order document
         final orderDoc = _orders.doc(orderId);
         txn.set(orderDoc, {
           'orderId':         orderId,
@@ -230,48 +219,44 @@ class OrderRepository {
           'adminAssignedTo': null,
           'collectedBy':     null,
         });
-        print('✅ Order document written: $orderId');
+        print('Order document written: $orderId');
       });
 
-      print('✅ Atomic checkout complete for order $orderId');
+      print('Atomic checkout complete for order $orderId');
       return orderId;
-    } on FirebaseException catch (e, s) {
-      print('❌ Firestore transaction failed: ${e.code} — ${e.message}\n$s');
+    } on FirebaseException catch(e,s){
+      print('Firestore transaction failed: ${e.code} — ${e.message}\n$s');
       throw Exception('Order failed: ${e.message ?? e.code}');
-    } catch (e) {
-      print('❌ Checkout error: $e');
-      rethrow; // Preserve descriptive stock error messages
+    } catch(e){
+      print('Checkout error: $e');
+      rethrow;
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // BUG #4 FIX — COD cash collection + order status updates
-  // ═══════════════════════════════════════════════════════════════════════════
-
   /// Admin marks COD cash as physically collected → delivered
-  Future<void> markCodCashCollected(String orderId, {String? adminUid}) async {
-    try {
+  Future<void> markCodCashCollected(String orderId, {String? adminUid}) async{
+    try{
       await _orders.doc(orderId).update({
         'paymentStatus': 'collected',
         'orderStatus':   'delivered',
         'deliveredAt':   FieldValue.serverTimestamp(),
         'collectedAt':   FieldValue.serverTimestamp(),
-        if (adminUid != null) 'collectedBy': adminUid,
+        if(adminUid!=null) 'collectedBy': adminUid,
       });
-      print('✅ markCodCashCollected: order $orderId marked collected by $adminUid');
-    } on FirebaseException catch (e) {
-      print('❌ markCodCashCollected error: ${e.code} — ${e.message}');
+      print('markCodCashCollected: order $orderId marked collected by $adminUid');
+    } on FirebaseException catch(e){
+      print('markCodCashCollected error: ${e.code} — ${e.message}');
       throw Exception('Failed to mark cash collected: ${e.message}');
     }
   }
 
-  /// Admin updates order lifecycle status + timestamps the transition
-  Future<void> updateOrderStatus(String orderId, String newStatus) async {
+  /// Admin updates order status + timestamps the transition
+  Future<void> updateOrderStatus(String orderId, String newStatus) async{
     final Map<String, dynamic> updates = {
       'orderStatus': newStatus,
     };
 
-    switch (newStatus) {
+    switch(newStatus){
       case 'confirmed':
         updates['confirmedAt'] = FieldValue.serverTimestamp();
         break;
@@ -286,30 +271,30 @@ class OrderRepository {
         break;
     }
 
-    try {
+    try{
       await _orders.doc(orderId).update(updates);
-      print('📝 updateOrderStatus: order $orderId → $newStatus');
+      print('updateOrderStatus: order $orderId → $newStatus');
     } on FirebaseException catch (e) {
-      print('❌ updateOrderStatus error: ${e.code} — ${e.message}');
+      print('updateOrderStatus error: ${e.code} — ${e.message}');
       throw Exception('Failed to update order status: ${e.message}');
     }
   }
 
-  /// Legacy create — kept for backward compat
+  /// Legacy create — kept for backwards compatibility
   Future<void> createOrder(OrderModel order) async {
     await _orders.doc(order.orderId).set(order.toMap());
-    print('✅ createOrder: ${order.orderId}');
+    print('createOrder: ${order.orderId}');
   }
 
-  /// Update payment status (e.g. after Razorpay webhook)
+  /// Update payment status
   Future<void> updatePaymentStatus(
     String orderId,
     String paymentStatus, {
     String? paymentId,
-  }) async {
+  }) async{
     final updates = <String, dynamic>{'paymentStatus': paymentStatus};
     if (paymentId != null) updates['paymentId'] = paymentId;
     await _orders.doc(orderId).update(updates);
-    print('📝 updatePaymentStatus: order $orderId → $paymentStatus');
+    print('updatePaymentStatus: order $orderId → $paymentStatus');
   }
 }

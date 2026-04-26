@@ -101,25 +101,28 @@ class TyreDetailScreen extends StatelessWidget {
                   style: TextStyle(fontSize: 16, color: Colors.blue),
                 ),
                 const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      print('🟢 INITIAL BOOK BUTTON TAPPED');
-                      if (FirebaseAuth.instance.currentUser == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Please wait for session to load')),
-                        );
-                        return;
-                      }
-                      Navigator.pushNamed(
-                        context,
-                        '/book_service',
-                        arguments: tyreId,
-                      );
-                    },
-                    child: const Text('Book Service'),
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          print('🟢 INITIAL BOOK BUTTON TAPPED');
+                          if (FirebaseAuth.instance.currentUser == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Please wait for session to load')),
+                            );
+                            return;
+                          }
+                          Navigator.pushNamed(
+                            context,
+                            '/book_service',
+                            arguments: tyreId,
+                          );
+                        },
+                        child: const Text('Book Service'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

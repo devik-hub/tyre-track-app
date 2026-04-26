@@ -6,7 +6,7 @@ import '../../../app/routes/app_routes.dart';
 import '../../../domain/providers/service_availability_provider.dart';
 import '../../../domain/providers/auth_provider.dart';
 
-class ServicesHomeScreen extends ConsumerWidget {
+class ServicesHomeScreen extends ConsumerWidget{
   const ServicesHomeScreen({super.key});
 
   static const List<Map<String, dynamic>> _allServices = [
@@ -17,19 +17,21 @@ class ServicesHomeScreen extends ConsumerWidget {
   ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context, WidgetRef ref){
     final availabilityAsync = ref.watch(serviceAvailabilityProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Services')),
+      appBar: AppBar(
+        title: const Text('Services'),
+      ),
       body: availabilityAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (availability) {
+        error: (e, _) => Center(child: Text('Error: $e'),),
+        data: (availability){
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: _allServices.length,
-            itemBuilder: (context, index) {
+            itemBuilder: (context,index){
               final service = _allServices[index];
               final serviceKey = service['key'] as String;
               final isAvailable = availability[serviceKey] ?? true;
@@ -45,14 +47,14 @@ class ServicesHomeScreen extends ConsumerWidget {
                       radius: 30,
                       child: Icon(service['icon'] as IconData, color: isAvailable ? AppColors.mrfRed : Colors.grey, size: 30),
                     ),
-                    title: Text(service['title'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    title: Text(service['title'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),),
                     subtitle: Padding(
                       padding: const EdgeInsets.only(top: 8.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(service['desc'] as String),
-                          if (!isAvailable) ...[
+                          if(!isAvailable) ...[
                             const SizedBox(height: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -61,7 +63,9 @@ class ServicesHomeScreen extends ConsumerWidget {
                                 borderRadius: BorderRadius.circular(4),
                                 border: Border.all(color: Colors.orange.shade200),
                               ),
-                              child: const Text('⚠ Not Available Today', style: TextStyle(color: Colors.deepOrange, fontSize: 12, fontWeight: FontWeight.bold)),
+                              child: const Text('⚠ Not Available Today',
+                                style: TextStyle(color: Colors.deepOrange, fontSize: 12, fontWeight: FontWeight.bold),
+                              ),
                             ),
                           ],
                         ],
@@ -69,13 +73,15 @@ class ServicesHomeScreen extends ConsumerWidget {
                     ),
                     trailing: GestureDetector(
                       behavior: HitTestBehavior.opaque,
-                      onTap: isAvailable ? () {
+                      onTap: isAvailable ? (){
                         final serviceName = service['title'];
-                        print('🟢 BOOK BUTTON TAPPED FOR: $serviceName');
+                        print('BOOK BUTTON TAPPED FOR: $serviceName');
                         final user = ref.read(authProvider).userModel;
-                        if (user == null) {
+                        if(user==null){
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Please wait for session to load or log in')),
+                            const SnackBar(
+                              content: Text('Please wait for session to load or log in'),
+                            ),
                           );
                           return;
                         }

@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-class BookServiceScreen extends StatefulWidget {
+class BookServiceScreen extends StatefulWidget{
   final String tyreId;
 
   const BookServiceScreen({super.key, required this.tyreId});
@@ -11,37 +11,39 @@ class BookServiceScreen extends StatefulWidget {
   State<BookServiceScreen> createState() => _BookServiceScreenState();
 }
 
-class _BookServiceScreenState extends State<BookServiceScreen> {
+class _BookServiceScreenState extends State<BookServiceScreen>{
   DateTime? _selectedDate;
   String? _serviceType;
   bool _isSubmitting = false;
 
   final List<String> _serviceTypes = const ['Inspect', 'Retread', 'Replace'];
 
-  Future<void> _pickDate() async {
+  Future<void> _pickDate() async{
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
       initialDate: now,
       firstDate: now,
-      lastDate: now.add(const Duration(days: 365)),
+      lastDate: now.add(const Duration(days: 365),),
     );
-    if (picked != null) {
+    if(picked != null){
       setState(() => _selectedDate = picked);
     }
   }
 
-  Future<void> _submitBooking() async {
-    if (_selectedDate == null || _serviceType == null) {
+  Future<void> _submitBooking() async{
+    if(_selectedDate==null || _serviceType==null){
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a date and service type')),
+        const SnackBar(
+          content: Text('Please select a date and service type'),
+        ),
       );
       return;
     }
 
     setState(() => _isSubmitting = true);
-    try {
-      if (FirebaseAuth.instance.currentUser == null) return;
+    try{
+      if(FirebaseAuth.instance.currentUser == null) return;
       print('Writing booking for uid: ${FirebaseAuth.instance.currentUser!.uid}');
 
       await FirebaseFirestore.instance.collection('bookings').add({
@@ -50,23 +52,26 @@ class _BookServiceScreenState extends State<BookServiceScreen> {
         'date': Timestamp.fromDate(_selectedDate!),
         'createdAt': FieldValue.serverTimestamp(),
       });
-      if (!mounted) return;
+      if(!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Booking created successfully!')),
+        const SnackBar(
+          content: Text('Booking created successfully!'),),
       );
       Navigator.pop(context);
-    } catch (e) {
-      if (!mounted) return;
+    } catch(e){
+      if(!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Booking failed: $e')),
+        SnackBar(
+          content: Text('Booking failed: $e'),
+        ),
       );
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+    } finally{
+      if(mounted) setState(() => _isSubmitting = false);
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context){
     final dateText = _selectedDate == null
         ? 'Choose Date'
         : '${_selectedDate!.day.toString().padLeft(2, '0')}/'
@@ -74,7 +79,9 @@ class _BookServiceScreenState extends State<BookServiceScreen> {
             '${_selectedDate!.year}';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Book Service')),
+      appBar: AppBar(
+        title: const Text('Book Service'),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
