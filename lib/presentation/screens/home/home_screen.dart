@@ -66,7 +66,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 2.5,
       children: [
         _buildActionCard(context, 'Buy New Tyre', Icons.shopping_bag, () => context.go(AppRoutes.tyres)),
-        _buildActionCard(context, 'Book Service', Icons.build, () => context.go(AppRoutes.services)),
+        _buildActionCard(context, 'Book Service', Icons.build, () {
+          print('🟢 INITIAL BOOK BUTTON TAPPED');
+          final user = ref.read(authProvider).userModel;
+          if (user == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Please wait for session to load or log in')),
+            );
+            return;
+          }
+          context.go(AppRoutes.services);
+        }),
         _buildActionCard(context, 'Buy Casing', Icons.circle, () => context.go(AppRoutes.casings)),
         _buildActionCard(context, 'Track Order', Icons.local_shipping, () => context.push(AppRoutes.orders)),
       ],
@@ -74,10 +84,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildActionCard(BuildContext context, String title, IconData icon, VoidCallback onTap) {
-    return InkWell(onTap: onTap, borderRadius: BorderRadius.circular(12), child: Card(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Icon(icon, color: AppColors.mrfRed, size: 20), const SizedBox(width: 8),
-      Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-    ])));
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: onTap,
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(icon, color: AppColors.mrfRed, size: 20), const SizedBox(width: 8),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+        ]),
+      ),
+    );
   }
 
   Widget _buildServicesSection(BuildContext context) {

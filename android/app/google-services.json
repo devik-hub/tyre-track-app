@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "1023008347654-80ur8itt6bn8bh6cmegh7tqdifd0jret.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.tyre_management",
+            "certificate_hash": "198a80ffea352b652d54265153d97379430da1cf"
+          }
+        },
+        {
           "client_id": "1023008347654-dq1mldtjrl110cls1jlaujd2fjkh3hkd.apps.googleusercontent.com",
           "client_type": 3
         }

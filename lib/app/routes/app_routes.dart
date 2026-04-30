@@ -23,6 +23,7 @@ abstract class AppRoutes {
   static const String orders        = '/orders';
   static const String help          = '/help';
   static const String notifications = '/notifications';
+  static const String bookService   = '/book-service';
 
   // ─── Public Info ───
   static const String about         = '/about';

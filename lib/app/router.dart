@@ -18,6 +18,7 @@ import '../presentation/screens/new_tyre/tyre_catalog_screen.dart';
 import '../presentation/screens/new_tyre/tyre_detail_screen.dart';
 import '../presentation/screens/new_tyre/cart_screen.dart';
 import '../presentation/screens/remold_service/services_home_screen.dart';
+import '../presentation/screens/remold_service/book_service_screen.dart';
 import '../presentation/screens/my_vehicles/vehicle_list_screen.dart';
 import '../presentation/screens/new_tyre/casing_catalog_screen.dart';
 import '../presentation/screens/profile/account_home_screen.dart';
@@ -128,6 +129,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: AppRoutes.orders,        builder: (context, state) => const OrdersScreen()),
       GoRoute(path: AppRoutes.help,          builder: (context, state) => const HelpSupportScreen()),
       GoRoute(path: AppRoutes.notifications, builder: (context, state) => const NotificationsScreen()),
+      GoRoute(path: AppRoutes.bookService,   builder: (context, state) => const BookServiceScreen()),
       GoRoute(
         path: AppRoutes.orderTracker,
         builder: (context, state) {
