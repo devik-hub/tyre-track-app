@@ -24,6 +24,7 @@ abstract class AppRoutes {
   static const String help          = '/help';
   static const String notifications = '/notifications';
   static const String bookService   = '/book-service';
+  static const String vehicles      = '/vehicles';
 
   // ─── Public Info ───
   static const String about         = '/about';

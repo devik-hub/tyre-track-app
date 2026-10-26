@@ -1,7 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../../../app/routes/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_text_styles.dart';
 import '../../../domain/providers/order_provider.dart';
+import '../../widgets/glass/liquid_glass_card.dart';
+import '../../widgets/glass/liquid_glass_app_bar.dart';
+import '../../widgets/glass/liquid_glass_status_badge.dart';
+import '../../widgets/glass/customer_background.dart';
 
 class OrdersScreen extends ConsumerWidget {
   const OrdersScreen({super.key});
@@ -11,137 +21,186 @@ class OrdersScreen extends ConsumerWidget {
     final ordersAsync = ref.watch(userOrdersProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Order History'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
-      body: ordersAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.mrfRed)),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (orders) {
-          if (orders.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.history, size: 80, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text('No orders yet', style: TextStyle(fontSize: 18, color: Colors.grey)),
-                  SizedBox(height: 8),
-                  Text('Your order history will appear here', style: TextStyle(color: Colors.grey)),
-                ],
-              ),
-            );
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: orders.length,
-            itemBuilder: (context, index) {
-              final order = orders[index];
-              final statusColor = _getStatusColor(order.orderStatus);
-              return Card(
-                margin: const EdgeInsets.only(bottom: 16),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      backgroundColor: AppColors.background,
+      body: CustomerBackground(
+        child: Column(
+          children: [
+            const LiquidGlassAppBar(
+              title: 'Order History',
+              showBrandSubtitle: true,
+            ),
+            Expanded(
+              child: ordersAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                error: (e, _) => Center(
+                  child: Text('Error: $e', style: AppTextStyles.body1.copyWith(color: AppColors.error)),
+                ),
+                data: (orders) {
+                  if (orders.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text('Order #${order.orderId.substring(0, 6).toUpperCase()}',
-                              style: const TextStyle(fontWeight: FontWeight.bold)),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            width: 88,
+                            height: 88,
                             decoration: BoxDecoration(
-                                color: statusColor.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(8)),
-                            child: Text(
-                              order.orderStatus.replaceAll('_', ' ').toUpperCase(),
-                              style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.bold),
+                              shape: BoxShape.circle,
+                              color: Colors.white.withValues(alpha: 0.92),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(alpha: 0.12),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
                             ),
+                            child: const Icon(LucideIcons.packageSearch, size: 40, color: AppColors.textTertiary),
+                          ),
+                          const Gap(18),
+                          Text('No Orders Yet', style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary)),
+                          const Gap(8),
+                          Text(
+                            'Your tyre purchase and order history will appear here.',
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.body2.copyWith(color: AppColors.textSecondary),
                           ),
                         ],
                       ),
-                      const Divider(height: 24),
-                      ...order.items.map((item) => Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(children: [
-                          const Icon(Icons.tire_repair, size: 16, color: Colors.grey),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '${item.productName.isNotEmpty ? item.productName : 'Item'} ×${item.quantity}',
-                              style: const TextStyle(fontSize: 13),
-                            ),
-                          ),
-                          Text(
-                            '₹${item.totalPriceRupees.toStringAsFixed(0)}',
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        ]),
-                      )),
-                      const Divider(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '${order.createdAt.day}/${order.createdAt.month}/${order.createdAt.year}',
-                            style: const TextStyle(color: Colors.grey, fontSize: 12),
-                          ),
-                          Text(
-                            'Total: ₹${order.finalAmountRupees.toStringAsFixed(0)}',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, color: AppColors.mrfRed, fontSize: 16),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(children: [
-                        Text('Payment: ', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: order.paymentStatus == 'paid' || order.paymentStatus == 'collected'
-                                ? Colors.green.shade100
-                                : Colors.orange.shade100,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            order.paymentStatus.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: order.paymentStatus == 'paid' || order.paymentStatus == 'collected'
-                                  ? Colors.green
-                                  : Colors.orange,
-                            ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    itemCount: orders.length,
+                    itemBuilder: (ctx, i) {
+                      final order = orders[i];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: LiquidGlassCard(
+                          onTap: () => context.push(AppRoutes.orderTracker, extra: order.orderId),
+                          borderRadius: 24,
+                          padding: const EdgeInsets.all(18),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(LucideIcons.hash, size: 16, color: AppColors.primary),
+                                      const Gap(4),
+                                      Text(
+                                        order.orderId.substring(0, 8).toUpperCase(),
+                                        style: AppTextStyles.mono.copyWith(
+                                          color: AppColors.textPrimary,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  LiquidGlassStatusBadge(
+                                    label: order.orderStatus.replaceAll('_', ' ').toUpperCase(),
+                                    color: _statusColor(order.orderStatus),
+                                  ),
+                                ],
+                              ),
+                              const Divider(color: Color(0xFFE8DCDC), height: 24),
+                              ...order.items.map(
+                                (item) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Row(
+                                    children: [
+                                      const Icon(LucideIcons.disc, size: 16, color: AppColors.primary),
+                                      const Gap(10),
+                                      Expanded(
+                                        child: Text(
+                                          '${item.productName.isNotEmpty ? item.productName : 'Tyre Product'} ×${item.quantity}',
+                                          style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary),
+                                        ),
+                                      ),
+                                      Text(
+                                        '₹${item.totalPriceRupees.toStringAsFixed(0)}',
+                                        style: AppTextStyles.label1.copyWith(
+                                          color: AppColors.textPrimary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const Divider(color: Color(0xFFE8DCDC), height: 24),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '${order.createdAt.day}/${order.createdAt.month}/${order.createdAt.year}',
+                                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                                  ),
+                                  Text(
+                                    '₹${order.finalAmountRupees.toStringAsFixed(0)}',
+                                    style: AppTextStyles.h2.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700),
+                                  ),
+                                ],
+                              ),
+                              const Gap(10),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text('Payment: ', style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
+                                      LiquidGlassStatusBadge(
+                                        label: order.paymentStatus.toUpperCase(),
+                                        color: order.paymentStatus == 'paid' || order.paymentStatus == 'collected'
+                                            ? AppColors.success
+                                            : AppColors.warning,
+                                      ),
+                                    ],
+                                  ),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'Track Order',
+                                        style: AppTextStyles.label2.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600),
+                                      ),
+                                      const Gap(4),
+                                      const Icon(LucideIcons.chevronRight, size: 14, color: AppColors.primary),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
-                      ]),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        },
+                      ).animate().fadeIn(duration: 300.ms, delay: (i * 60).ms).slideY(begin: 0.05, end: 0);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Color _getStatusColor(String status) {
+  Color _statusColor(String status) {
     switch (status) {
-      case 'pending_confirmation': return Colors.orange;
-      case 'confirmed':            return Colors.blue;
-      case 'processing':           return Colors.purple;
-      case 'shipped':              return Colors.indigo;
-      case 'delivered':            return Colors.green;
-      case 'cancelled':            return Colors.red;
-      default:                     return Colors.grey;
+      case 'pending_confirmation':
+        return AppColors.warning;
+      case 'confirmed':
+      case 'processing':
+      case 'shipped':
+        return const Color(0xFF2980B9);
+      case 'delivered':
+        return AppColors.success;
+      case 'cancelled':
+        return AppColors.error;
+      default:
+        return AppColors.textSecondary;
     }
   }
 }

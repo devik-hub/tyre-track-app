@@ -4,7 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_text_styles.dart';
+import '../../widgets/glass/admin_background.dart';
+import '../../widgets/glass/liquid_glass_app_bar.dart';
 import '../../../data/models/product_model.dart';
 import '../../../data/repositories/product_repository.dart';
 import '../../../data/repositories/storage_repository.dart';
@@ -27,55 +31,73 @@ class _ManageInventoryScreenState extends ConsumerState<ManageInventoryScreen> {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        backgroundColor: AppColors.mrfBlack,
-        appBar: AppBar(
-          title: const Text('Inventory Control', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1.2)),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: AppColors.adminBg1,
+        appBar: LiquidGlassAppBar(
+          title: 'Inventory Control',
+          isDark: true,
           actions: [
             IconButton(
-              icon: Icon(_showInsights ? Icons.insights : Icons.insights_outlined, color: _showInsights ? AppColors.mrfRed : Colors.white),
+              icon: Icon(
+                _showInsights ? LucideIcons.barChart2 : LucideIcons.barChart,
+                color: _showInsights ? AppColors.primary : Colors.white,
+                size: 20,
+              ),
               onPressed: () => setState(() => _showInsights = !_showInsights),
               tooltip: 'Search Insights',
             ),
           ],
-          bottom: const TabBar(
-            indicatorColor: AppColors.mrfRed,
-            labelColor: AppColors.mrfRed,
-            unselectedLabelColor: Colors.white54,
-            tabs: [
-              Tab(text: 'TYRES'),
-              Tab(text: 'CASINGS'),
-              Tab(text: 'ALL'),
-            ],
-          ),
         ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () => _showProductBottomSheet(context, ref, null),
-          backgroundColor: AppColors.mrfRed,
-          icon: const Icon(Icons.add, color: Colors.white),
-          label: const Text('New Product', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          backgroundColor: AppColors.primary,
+          icon: const Icon(LucideIcons.plus, color: Colors.white, size: 20),
+          label: Text('New Product', style: AppTextStyles.label1.copyWith(color: Colors.white)),
         ),
-        body: Column(
-          children: [
-            if (_showInsights) _buildSearchInsightsPanel(),
-            Expanded(
-              child: ref.watch(productStreamProvider).when(
-                loading: () => const Center(child: CircularProgressIndicator(color: AppColors.mrfRed)),
-                error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: Colors.red))),
-                data: (products) {
-                  return TabBarView(
-                    children: [
-                      _buildProductList(products.where((p) => p.category != 'casing').toList()),
-                      _buildProductList(products.where((p) => p.category == 'casing').toList()),
-                      _buildProductList(products),
-                    ],
-                  );
-                },
+        body: AdminBackground(
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.adminCardBase.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                ),
+                child: TabBar(
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  indicator: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    color: AppColors.primary.withValues(alpha: 0.25),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+                  ),
+                  labelColor: Colors.white,
+                  unselectedLabelColor: AppColors.adminTextTert,
+                  labelStyle: AppTextStyles.labelCaps,
+                  tabs: const [
+                    Tab(text: 'TYRES'),
+                    Tab(text: 'CASINGS'),
+                    Tab(text: 'ALL'),
+                  ],
+                ),
               ),
-            ),
-          ],
+              if (_showInsights) _buildSearchInsightsPanel(),
+              Expanded(
+                child: ref.watch(productStreamProvider).when(
+                  loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                  error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: Colors.red))),
+                  data: (products) {
+                    return TabBarView(
+                      children: [
+                        _buildProductList(products.where((p) => p.category != 'casing').toList()),
+                        _buildProductList(products.where((p) => p.category == 'casing').toList()),
+                        _buildProductList(products),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

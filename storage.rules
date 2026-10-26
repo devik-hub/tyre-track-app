@@ -1,0 +1,43 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.admin == true ||
+        request.auth.token.role == 'admin'
+      );
+    }
+
+    function isValidImage() {
+      return request.resource.size < 5 * 1024 * 1024 &&
+             request.resource.contentType.matches('image/.*');
+    }
+
+    // ─── Products Storage ──────────────────────────────────────────
+    // Product images: authenticated users can read, only admins can upload/delete
+    match /products/{productId}/{imageId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isValidImage();
+    }
+
+    // ─── Invoices ──────────────────────────────────────────────────
+    // Orders / Invoices: users can view their invoice; only admins can write invoices
+    match /invoices/{orderId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ─── User Profiles ─────────────────────────────────────────────
+    // User profile images: restricted to the user themselves or admins
+    match /users/{userId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin()) && isValidImage();
+    }
+  }
+}

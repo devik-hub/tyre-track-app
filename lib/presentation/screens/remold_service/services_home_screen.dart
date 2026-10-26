@@ -1,110 +1,162 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_text_styles.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../domain/providers/service_availability_provider.dart';
 import '../../../domain/providers/auth_provider.dart';
+import '../../widgets/glass/customer_background.dart';
+import '../../widgets/glass/liquid_glass_card.dart';
+import '../../widgets/glass/liquid_glass_app_bar.dart';
+import '../../widgets/glass/liquid_glass_button.dart';
+import '../../widgets/glass/liquid_glass_status_badge.dart';
 
-class ServicesHomeScreen extends ConsumerWidget{
+class ServicesHomeScreen extends ConsumerWidget {
   const ServicesHomeScreen({super.key});
 
   static const List<Map<String, dynamic>> _allServices = [
-    {'key': 'retreading', 'title': 'Retreading', 'icon': Icons.sync, 'desc': 'Extend the life of your tyre with premium MRF treading.'},
-    {'key': 'remoulding', 'title': 'Remoulding', 'icon': Icons.layers, 'desc': 'Complete tyre rebuild for superior safety.'},
-    {'key': 'inspection', 'title': 'Inspection', 'icon': Icons.search, 'desc': 'Detailed 25-point safety check.'},
-    {'key': 'new_fitment', 'title': 'New Fitment', 'icon': Icons.build, 'desc': 'Professional installation of new tyres.'},
+    {
+      'key': 'retreading',
+      'title': 'MRF Retreading',
+      'icon': LucideIcons.refreshCw,
+      'desc': 'Extend tyre lifespan with certified MRF precinct tread rubber.',
+    },
+    {
+      'key': 'remoulding',
+      'title': 'Tyre Remoulding',
+      'icon': LucideIcons.layers,
+      'desc': 'Complete tyre rebuild for superior grip, balance, and highway safety.',
+    },
+    {
+      'key': 'inspection',
+      'title': '25-Point Inspection',
+      'icon': LucideIcons.search,
+      'desc': 'Detailed structural casing and tread health diagnostic scan.',
+    },
+    {
+      'key': 'new_fitment',
+      'title': 'Fitment & Balancing',
+      'icon': LucideIcons.wrench,
+      'desc': 'Professional alignment and rim fitment by certified technicians.',
+    },
   ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref){
+  Widget build(BuildContext context, WidgetRef ref) {
     final availabilityAsync = ref.watch(serviceAvailabilityProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Services'),
+      backgroundColor: AppColors.background,
+      appBar: const LiquidGlassAppBar(
+        title: 'Retread & Services',
+        showBrandSubtitle: true,
       ),
-      body: availabilityAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e'),),
-        data: (availability){
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: _allServices.length,
-            itemBuilder: (context,index){
-              final service = _allServices[index];
-              final serviceKey = service['key'] as String;
-              final isAvailable = availability[serviceKey] ?? true;
+      body: CustomerBackground(
+        child: availabilityAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          error: (e, _) => Center(
+            child: Text('Error: $e', style: AppTextStyles.body1.copyWith(color: AppColors.error)),
+          ),
+          data: (availability) {
+            return ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              itemCount: _allServices.length,
+              itemBuilder: (ctx, index) {
+                final svc = _allServices[index];
+                final key = svc['key'] as String;
+                final isAvail = availability[key] ?? true;
 
-              return Card(
-                margin: const EdgeInsets.only(bottom: 16),
-                child: Opacity(
-                  opacity: isAvailable ? 1.0 : 0.5,
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(16),
-                    leading: CircleAvatar(
-                      backgroundColor: (isAvailable ? AppColors.mrfRed : Colors.grey).withOpacity(0.1),
-                      radius: 30,
-                      child: Icon(service['icon'] as IconData, color: isAvailable ? AppColors.mrfRed : Colors.grey, size: 30),
-                    ),
-                    title: Text(service['title'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Opacity(
+                    opacity: isAvail ? 1.0 : 0.6,
+                    child: LiquidGlassCard(
+                      borderRadius: 24,
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
                         children: [
-                          Text(service['desc'] as String),
-                          if(!isAvailable) ...[
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.orange.shade50,
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: Colors.orange.shade200),
+                          Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  (isAvail ? AppColors.primary : AppColors.textTertiary).withValues(alpha: 0.16),
+                                  (isAvail ? AppColors.primary : AppColors.textTertiary).withValues(alpha: 0.06),
+                                ],
                               ),
-                              child: const Text('⚠ Not Available Today',
-                                style: TextStyle(color: Colors.deepOrange, fontSize: 12, fontWeight: FontWeight.bold),
+                              border: Border.all(
+                                color: (isAvail ? AppColors.primary : AppColors.textTertiary).withValues(alpha: 0.25),
+                                width: 1,
                               ),
                             ),
-                          ],
+                            child: Icon(
+                              svc['icon'] as IconData,
+                              color: isAvail ? AppColors.primary : AppColors.textTertiary,
+                              size: 24,
+                            ),
+                          ),
+                          const Gap(16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  svc['title'] as String,
+                                  style: AppTextStyles.h3.copyWith(
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const Gap(4),
+                                Text(
+                                  svc['desc'] as String,
+                                  style: AppTextStyles.body2.copyWith(color: AppColors.textSecondary),
+                                ),
+                                if (!isAvail) ...[
+                                  const Gap(8),
+                                  const LiquidGlassStatusBadge(label: 'Unavailable Today', color: AppColors.warning),
+                                ],
+                              ],
+                            ),
+                          ),
+                          const Gap(12),
+                          SizedBox(
+                            width: 80,
+                            child: LiquidGlassButton(
+                              label: isAvail ? 'Book' : 'Closed',
+                              height: 42,
+                              variant: isAvail ? GlassButtonVariant.primary : GlassButtonVariant.secondary,
+                              onPressed: isAvail
+                                  ? () {
+                                      final user = ref.read(authProvider).userModel;
+                                      if (user == null) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Please wait or log in')),
+                                        );
+                                        return;
+                                      }
+                                      context.push(AppRoutes.bookService);
+                                    }
+                                  : null,
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                    trailing: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: isAvailable ? (){
-                        final serviceName = service['title'];
-                        print('BOOK BUTTON TAPPED FOR: $serviceName');
-                        final user = ref.read(authProvider).userModel;
-                        if(user==null){
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Please wait for session to load or log in'),
-                            ),
-                          );
-                          return;
-                        }
-                        context.push(AppRoutes.bookService);
-                      } : null,
-                      child: IgnorePointer(
-                        child: ElevatedButton(
-                          onPressed: isAvailable ? () {} : null, // Handled by GestureDetector
-                          style: ElevatedButton.styleFrom(
-                            minimumSize: const Size(80, 36),
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            disabledBackgroundColor: Colors.grey.shade300,
-                          ),
-                          child: Text(isAvailable ? 'Book' : 'Closed'),
-                        ),
-                      ),
-                    ),
                   ),
-                ),
-              );
-            },
-          );
-        },
+                ).animate().fadeIn(duration: 300.ms, delay: (index * 60).ms).slideY(begin: 0.05, end: 0);
+              },
+            );
+          },
+        ),
       ),
     );
   }

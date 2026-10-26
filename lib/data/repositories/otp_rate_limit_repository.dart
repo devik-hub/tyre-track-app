@@ -20,29 +20,27 @@ class OtpRateLimitRepository {
         .collection(FirebaseConstants.otpRateLimitsCollection)
         .doc(phone);
 
-    final doc = await docRef.get();
+    await _firestore.runTransaction((tx) async {
+      final doc = await tx.get(docRef);
 
-    if (doc.exists) {
-      final data = doc.data() as Map<String, dynamic>;
-      final storedDate = data['date'] as String? ?? '';
-      final count = data['count'] as int? ?? 0;
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        final storedDate = data['date'] as String? ?? '';
+        final count = data['count'] as int? ?? 0;
 
-      if (storedDate == today) {
-        // Same day — check the limit
-        if (count >= maxOtpPerDay) {
-          throw Exception(
-            'You have reached the maximum of $maxOtpPerDay OTP requests for today. Please try again tomorrow.',
-          );
+        if (storedDate == today) {
+          if (count >= maxOtpPerDay) {
+            throw Exception(
+              'You have reached the maximum of $maxOtpPerDay OTP requests for today. Please try again tomorrow.',
+            );
+          }
+          tx.update(docRef, {'count': count + 1});
+        } else {
+          tx.set(docRef, {'date': today, 'count': 1});
         }
-        // Under limit — increment
-        await docRef.update({'count': count + 1});
       } else {
-        // New day — reset counter
-        await docRef.set({'date': today, 'count': 1});
+        tx.set(docRef, {'date': today, 'count': 1});
       }
-    } else {
-      // First ever request for this phone
-      await docRef.set({'date': today, 'count': 1});
-    }
+    });
   }
 }

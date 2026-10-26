@@ -130,6 +130,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: AppRoutes.help,          builder: (context, state) => const HelpSupportScreen()),
       GoRoute(path: AppRoutes.notifications, builder: (context, state) => const NotificationsScreen()),
       GoRoute(path: AppRoutes.bookService,   builder: (context, state) => const BookServiceScreen()),
+      GoRoute(path: AppRoutes.vehicles,      builder: (context, state) => const VehicleListScreen()),
       GoRoute(
         path: AppRoutes.orderTracker,
         builder: (context, state) {

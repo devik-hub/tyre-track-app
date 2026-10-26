@@ -1,6 +1,8 @@
 const {onSchedule} = require("firebase-functions/v2/scheduler");
-const admin = require('firebase-admin');
+const admin = require("firebase-admin");
 admin.initializeApp();
+
+const BATCH_LIMIT = 400; // Safe threshold well below Firestore's 500 write limit
 
 exports.notificationCronJob = onSchedule("0 8 * * *", async (event) => {
   const db = admin.firestore();
@@ -10,51 +12,79 @@ exports.notificationCronJob = onSchedule("0 8 * * *", async (event) => {
     .where("status", "==", "completed")
     .get();
 
-  const batch = db.batch();
-  const notifications = [];
+  if (snapshot.empty) {
+    console.log("No completed tyre services found.");
+    return;
+  }
+
+  const operations = []; // array of { type: 'set'|'update', ref, data }
 
   for (const doc of snapshot.docs) {
     const service = doc.data();
     if (!service.serviceDate) continue;
-    
-    const serviceDate = service.serviceDate.toDate();
-    const daysSince = Math.floor((now - serviceDate) / (1000 * 60 * 60 * 24));
 
-    // 1-Year Alert
-    if (!service.notification1YrSent && daysSince >= 365 && daysSince < 366) {
-      notifications.push(buildNotification(service, "1yr", "🔍 Tyre Check Reminder", "Your retreaded tyre (1 year) is due for inspection."));
-      batch.update(doc.ref, { notification1YrSent: true });
+    const serviceDate = service.serviceDate.toDate ? service.serviceDate.toDate() : new Date(service.serviceDate);
+    const daysSince = Math.floor((now - serviceDate) / (1000 * 60 * 60 * 24));
+    const updates = {};
+
+    // 1-Year Alert (monotonic threshold check)
+    if (!service.notification1YrSent && daysSince >= 365) {
+      const notifData = buildNotification(service, "1yr", "🔍 Tyre Check Reminder", "Your retreaded tyre (1 year) is due for inspection.");
+      const notifRef = db.collection("notifications").doc();
+      operations.push({ type: "set", ref: notifRef, data: notifData });
+      updates.notification1YrSent = true;
     }
+
     // 2-Year Alert
-    if (!service.notification2YrSent && daysSince >= 730 && daysSince < 731) {
-      notifications.push(buildNotification(service, "2yr", "⚠️ Retreading Due Soon", "Your tyre has completed 2 years. Time to book a retreading service!"));
-      batch.update(doc.ref, { notification2YrSent: true });
+    if (!service.notification2YrSent && daysSince >= 730) {
+      const notifData = buildNotification(service, "2yr", "⚠️ Retreading Due Soon", "Your tyre has completed 2 years. Time to book a retreading service!");
+      const notifRef = db.collection("notifications").doc();
+      operations.push({ type: "set", ref: notifRef, data: notifData });
+      updates.notification2YrSent = true;
     }
+
     // Expiry Alert
     const warrantyDays = (service.warrantyMonths || 24) * 30;
     if (!service.notificationExpirySent && daysSince >= warrantyDays) {
-      notifications.push(buildNotification(service, "expiry", "🚨 Warranty Expired", "Retreading warranty has expired. Book an inspection immediately."));
-      batch.update(doc.ref, { notificationExpirySent: true });
+      const notifData = buildNotification(service, "expiry", "🚨 Warranty Expired", "Retreading warranty has expired. Book an inspection immediately.");
+      const notifRef = db.collection("notifications").doc();
+      operations.push({ type: "set", ref: notifRef, data: notifData });
+      updates.notificationExpirySent = true;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      operations.push({ type: "update", ref: doc.ref, data: updates });
     }
   }
 
-  // Send Notifications via FCM (Batching in chunks of 500)
-  // await sendFCMNotifications(notifications);
-  
-  if (notifications.length > 0) {
+  // Commit operations in batches of BATCH_LIMIT
+  if (operations.length > 0) {
+    for (let i = 0; i < operations.length; i += BATCH_LIMIT) {
+      const chunk = operations.slice(i, i + BATCH_LIMIT);
+      const batch = db.batch();
+      for (const op of chunk) {
+        if (op.type === "set") {
+          batch.set(op.ref, op.data);
+        } else if (op.type === "update") {
+          batch.update(op.ref, op.data);
+        }
+      }
       await batch.commit();
-      console.log(`Dispatched ${notifications.length} lifecycle notifications.`);
+    }
+    console.log(`Successfully committed ${operations.length} notification operations.`);
+  } else {
+    console.log("No pending lifecycle notifications for today.");
   }
 });
 
 function buildNotification(service, type, title, body) {
-   return {
-       userId: service.customerId,
-       title: title,
-       body: body,
-       type: type,
-       serviceId: service.serviceId,
-       createdAt: admin.firestore.FieldValue.serverTimestamp(),
-       isRead: false
-   };
+  return {
+    userId: service.customerId || "",
+    title: title,
+    body: body,
+    type: type,
+    serviceId: service.serviceId || "",
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    isRead: false,
+  };
 }

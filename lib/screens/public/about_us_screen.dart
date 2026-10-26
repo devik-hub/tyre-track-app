@@ -123,7 +123,7 @@ class AboutUsScreen extends StatelessWidget {
             ),
             _buildProcessStep(
               '4. Applying Bonding Agent',
-              'assets/images/Applying Bonding Agent .jpg',
+              'assets/images/Applying Bonding Agent.jpg',
               'Objective: Establish a robust bond between the existing casing and the new tread.\nProcedure: A layer of rubber cement or bonding adhesive is applied to the polished surface of the casing.',
             ),
             _buildProcessStep(
@@ -138,7 +138,7 @@ class AboutUsScreen extends StatelessWidget {
             ),
             _buildProcessStep(
               '7. Vulcanization (Curing)',
-              'assets/images/Vulcanization .jpg',
+              'assets/images/Vulcanization.jpg',
               'Objective: Permanently adhere the newly installed tread to the casing.\nProcedure: The tyre is placed within a curing chamber or autoclave, which is subjected to controlled temperatures, pressures, and durations.\nProcess: Vulcanization strengthens the rubber and ensures the secure attachment of the new tread.',
             ),
             _buildProcessStep(

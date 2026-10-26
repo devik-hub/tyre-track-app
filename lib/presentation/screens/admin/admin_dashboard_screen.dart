@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gap/gap.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_text_styles.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../domain/providers/auth_provider.dart';
 import '../../../domain/providers/admin_provider.dart';
+import '../../widgets/glass/admin_background.dart';
+import '../../widgets/glass/liquid_glass_card.dart';
+import '../../widgets/glass/liquid_glass_app_bar.dart';
+import '../../widgets/glass/liquid_glass_kpi_card.dart';
+import '../../widgets/glass/liquid_glass_status_badge.dart';
 
 class AdminDashboardScreen extends ConsumerWidget {
   const AdminDashboardScreen({super.key});
@@ -15,169 +24,238 @@ class AdminDashboardScreen extends ConsumerWidget {
     final stats = ref.watch(adminStatsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.mrfBlack,
-      appBar: AppBar(
-        title: const Text('MRF Operations Command', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.white, letterSpacing: 1.2)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white), 
-            onPressed: () async {
-              await ref.read(authProvider.notifier).logout();
-              if (context.mounted) context.go(AppRoutes.login);
-            },
+      backgroundColor: AppColors.adminBg1,
+      appBar: LiquidGlassAppBar(
+        title: 'MRF Operations Console',
+        isDark: true,
+        centerTitle: false,
+        leading: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppColors.primary.withValues(alpha: 0.15),
           ),
+          child: const Icon(LucideIcons.shieldAlert, size: 18, color: AppColors.primary),
+        ),
+        actions: [
+          GestureDetector(
+            onTap: () => _confirmLogout(context, ref),
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.12),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1),
+              ),
+              child: const Icon(LucideIcons.logOut, size: 16, color: AppColors.adminTextPrimary),
+            ),
+          ),
+          const Gap(12),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: AppColors.mrfRed,
-                  child: Text(user?.name.isNotEmpty == true ? user!.name[0].toUpperCase() : 'A', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
-                ),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Welcome back, ${user?.name ?? 'Admin'}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(4)),
-                          child: const Text('Live Sync Active', style: TextStyle(color: Colors.greenAccent, fontSize: 10, fontWeight: FontWeight.bold)),
+      body: AdminBackground(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Welcome header
+              Row(
+                children: [
+                  Container(
+                    width: 58,
+                    height: 58,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        colors: [AppColors.primary, AppColors.primaryDark],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.35),
+                          blurRadius: 14,
+                          offset: const Offset(0, 4),
                         ),
-                        const SizedBox(width: 8),
-                        Text('Role: Administrator', style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
                       ],
                     ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
-            const Text('OVERVIEW', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: Colors.grey)),
-            const SizedBox(height: 16),
-            _buildStatGrid(stats),
-            const SizedBox(height: 32),
-            const Text('QUICK ACTIONS', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: Colors.grey)),
-            const SizedBox(height: 16),
-            _buildActionTile(context, Icons.inventory_2_rounded, 'Manage Inventory', 'Add, edit, or remove MRF products from the mobile catalog', AppRoutes.adminInventory),
-            const SizedBox(height: 16),
-            _buildActionTile(context, Icons.build_rounded, 'Service Bookings', 'Process and assign technicians to customer service requests', AppRoutes.adminBookings),
-            const SizedBox(height: 16),
-            _buildActionTile(context, Icons.receipt_long_rounded, 'Customer Orders', 'Track fulfillment and dispatch new tyre orders', AppRoutes.adminOrders),
-            const SizedBox(height: 16),
-            _buildActionTile(context, Icons.miscellaneous_services_rounded, 'Service Availability', 'Enable or disable services for today based on workload', AppRoutes.adminServices),
-            const SizedBox(height: 16),
-            _buildActionTile(context, Icons.category_rounded, 'Vehicle Categories', 'Create and manage vehicle categories for the catalog', AppRoutes.adminCategories),
-            const SizedBox(height: 16),
-            _buildActionTile(context, Icons.settings_rounded, 'Settings', 'Update business info, hours, and contact details', AppRoutes.adminSettings),
-            const SizedBox(height: 40),
-          ],
+                    child: Center(
+                      child: Text(
+                        user?.name.isNotEmpty == true ? user!.name[0].toUpperCase() : 'A',
+                        style: AppTextStyles.h1.copyWith(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                  const Gap(16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Welcome, ${user?.name ?? 'Admin'}',
+                          style: AppTextStyles.h1.copyWith(color: AppColors.adminTextPrimary),
+                        ),
+                        const Gap(4),
+                        Row(
+                          children: [
+                            const LiquidGlassStatusBadge(label: 'Live Console', color: AppColors.success, glow: true),
+                            const Gap(8),
+                            Text('Master Operator', style: AppTextStyles.body2.copyWith(color: AppColors.adminTextSec)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ).animate().fadeIn(duration: 300.ms),
+              const Gap(28),
+              Text(
+                'SYSTEM METRICS & KPI',
+                style: AppTextStyles.labelCaps.copyWith(color: AppColors.adminTextTert, letterSpacing: 1.2),
+              ),
+              const Gap(14),
+              _buildStatGrid(stats).animate().fadeIn(duration: 350.ms, delay: 100.ms),
+              const Gap(32),
+              Text(
+                'MANAGEMENT ACTIONS',
+                style: AppTextStyles.labelCaps.copyWith(color: AppColors.adminTextTert, letterSpacing: 1.2),
+              ),
+              const Gap(14),
+              _tile(context, LucideIcons.boxes, 'Manage Inventory', 'Add, edit, or remove MRF products & casings', AppRoutes.adminInventory),
+              const Gap(12),
+              _tile(context, LucideIcons.wrench, 'Service Bookings', 'Review & process customer service jobs', AppRoutes.adminBookings),
+              const Gap(12),
+              _tile(context, LucideIcons.fileSpreadsheet, 'Customer Orders', 'Track fulfillment, dispatch & delivery', AppRoutes.adminOrders),
+              const Gap(12),
+              _tile(context, LucideIcons.toggleRight, 'Service Availability', 'Enable/disable services and slot caps', AppRoutes.adminServices),
+              const Gap(12),
+              _tile(context, LucideIcons.layoutGrid, 'Vehicle Categories', 'Configure tyre dimension & vehicle groupings', AppRoutes.adminCategories),
+              const Gap(12),
+              _tile(context, LucideIcons.settings, 'Business Settings', 'Operating hours, contacts & bank details', AppRoutes.adminSettings),
+              const Gap(40),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.adminCardBase,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+        ),
+        title: Text('Log Out', style: AppTextStyles.h2.copyWith(color: AppColors.adminTextPrimary)),
+        content: Text(
+          'Are you sure you want to end your admin operations session?',
+          style: AppTextStyles.body1.copyWith(color: AppColors.adminTextSec),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('Cancel', style: AppTextStyles.button.copyWith(color: AppColors.adminTextSec)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('Log Out', style: AppTextStyles.button.copyWith(color: AppColors.primary)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      await ref.read(authProvider.notifier).logout();
+      if (context.mounted) context.go(AppRoutes.login);
+    }
   }
 
   Widget _buildStatGrid(Map<String, dynamic> stats) {
     final codOutstanding = (stats['codOutstanding'] as double?) ?? 0.0;
-    final codCount       = (stats['codPendingCount'] as int?) ?? 0;
+    final codCount = (stats['codPendingCount'] as int?) ?? 0;
 
     return GridView.count(
       crossAxisCount: 2,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
+      crossAxisSpacing: 14,
+      mainAxisSpacing: 14,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.3,
+      childAspectRatio: 0.95,
       children: [
-        _buildGradientStatCard('Total Revenue', '₹${stats['revenue'] ?? 0}', [Colors.orange.shade800, Colors.deepOrange.shade600], Icons.account_balance_wallet_rounded),
-        _buildGradientStatCard('Pending Bookings', '${stats['pendingBookings'] ?? 0}', [Colors.blue.shade800, Colors.blue.shade600], Icons.pending_actions_rounded),
-        _buildGradientStatCard('Active Jobs', '${stats['activeRetreads'] ?? 0}', [Colors.green.shade800, Colors.green.shade600], Icons.engineering_rounded),
-        _buildGradientStatCard('Low Stock Alerts', '${stats['lowStock'] ?? 0}', [const Color(0xFFC62828), AppColors.mrfRed], Icons.warning_rounded),
-        _buildGradientStatCard('COD Due', '₹${codOutstanding.toStringAsFixed(0)}\n$codCount orders', [Colors.amber.shade800, Colors.amber.shade600], Icons.payments_rounded),
+        LiquidGlassKpiCard(
+          title: 'Total Revenue',
+          value: '₹${stats['revenue'] ?? 0}',
+          icon: LucideIcons.wallet,
+          accentColor: AppColors.warning,
+          isDark: true,
+        ),
+        LiquidGlassKpiCard(
+          title: 'Pending Bookings',
+          value: '${stats['pendingBookings'] ?? 0}',
+          icon: LucideIcons.calendarClock,
+          accentColor: const Color(0xFF3498DB),
+          isDark: true,
+        ),
+        LiquidGlassKpiCard(
+          title: 'Active Jobs',
+          value: '${stats['activeRetreads'] ?? 0}',
+          icon: LucideIcons.hardHat,
+          accentColor: AppColors.success,
+          isDark: true,
+        ),
+        LiquidGlassKpiCard(
+          title: 'Low Stock Alert',
+          value: '${stats['lowStock'] ?? 0}',
+          icon: LucideIcons.alertTriangle,
+          accentColor: AppColors.primary,
+          isDark: true,
+        ),
+        LiquidGlassKpiCard(
+          title: 'COD Due',
+          value: '₹${codOutstanding.toStringAsFixed(0)}',
+          subtitle: '$codCount pending',
+          icon: LucideIcons.banknote,
+          accentColor: AppColors.secondary,
+          isDark: true,
+        ),
       ],
     );
   }
 
-  Widget _buildGradientStatCard(String title, String value, List<Color> gradientColors, IconData icon) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: gradientColors, begin: Alignment.topLeft, end: Alignment.bottomRight),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: gradientColors.last.withValues(alpha: 0.4), blurRadius: 10, offset: const Offset(0, 4))
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Icon(icon, color: Colors.white70, size: 28),
-              const Icon(Icons.arrow_outward_rounded, color: Colors.white30, size: 20),
-            ],
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-              const SizedBox(height: 4),
-              Text(title, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionTile(BuildContext context, IconData icon, String title, String subtitle, String route) {
-    return InkWell(
+  Widget _tile(BuildContext context, IconData icon, String title, String sub, String route) {
+    return LiquidGlassCard(
+      isDark: true,
       onTap: () => context.push(route),
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white10),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.mrfRed.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: AppColors.mrfRed, size: 28),
+      borderRadius: 22,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              color: AppColors.primary.withValues(alpha: 0.15),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 1),
             ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
-                  const SizedBox(height: 6),
-                  Text(subtitle, style: TextStyle(color: Colors.grey.shade400, fontSize: 12, height: 1.4)),
-                ],
-              ),
+            child: Icon(icon, color: AppColors.primary, size: 22),
+          ),
+          const Gap(16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: AppTextStyles.h3.copyWith(color: AppColors.adminTextPrimary, fontWeight: FontWeight.w600)),
+                const Gap(4),
+                Text(sub, style: AppTextStyles.body2.copyWith(color: AppColors.adminTextSec)),
+              ],
             ),
-            const Icon(Icons.chevron_right, color: Colors.white30),
-          ],
-        ),
+          ),
+          const Icon(LucideIcons.chevronRight, color: AppColors.adminTextTert, size: 20),
+        ],
       ),
     );
   }

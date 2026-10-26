@@ -1,0 +1,256 @@
+rules_version = '2';
+
+// ===============================================================
+// Assumed Data Model & Security Schema
+// ===============================================================
+//
+// Collection: users
+// Document ID: {userId} (matches Firebase Auth UID)
+// Fields:
+//   - uid: string (required, immutable)
+//   - name: string (required, 1..100 chars)
+//   - phone: string (optional/required, max 20 chars)
+//   - email: string (optional/required, valid email format)
+//   - role: string (required, 'customer' or 'admin', client cannot self-escalate to 'admin')
+//   - createdAt: timestamp or date
+//
+// Collection: products
+// Document ID: {productId}
+// Fields:
+//   - productId: string (required)
+//   - name: string (required)
+//   - category: string ('tyre' | 'casing')
+//   - price: number (integer paise >= 0)
+//   - stockQuantity: number (integer >= 0)
+//   - ... (admin managed)
+//
+// Collection: orders
+// Document ID: {orderId}
+// Fields:
+//   - orderId: string (required)
+//   - customerId: string (required, must match request.auth.uid)
+//   - totalAmount: number (>= 0)
+//   - finalAmount: number (>= 0)
+//   - paymentStatus: string ('pending' | 'paid' | 'collected')
+//   - orderStatus: string
+//   - ...
+//
+// Collection: service_bookings
+// Document ID: {bookingId}
+// Fields:
+//   - bookingId: string (required)
+//   - customerId: string (required, must match request.auth.uid)
+//   - status: string
+//
+// Collection: vehicles
+// Document ID: {vehicleId}
+// Fields:
+//   - customerId or userId: string (matches request.auth.uid)
+//
+// Collection: notifications
+// Document ID: {notificationId}
+// Fields:
+//   - userId: string (matches request.auth.uid)
+//
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.admin == true ||
+        request.auth.token.role == 'admin' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$');
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    // ─── Users Collection ──────────────────────────────────────────
+    match /users/{userId} {
+      // Users can only read their own profile; Admins can read all profiles
+      allow read: if isOwner(userId) || isAdmin();
+
+      // Create: Users can create their own document, but regular users CANNOT set role to 'admin'
+      allow create: if isAuthenticated() &&
+                       isOwner(userId) &&
+                       request.resource.data.uid == userId &&
+                       ((request.resource.data.role == 'customer') || isAdmin());
+
+      // Update: Users can update their own profile, but CANNOT change their role to 'admin'
+      allow update: if isAuthenticated() && (
+        isAdmin() ||
+        (
+          isOwner(userId) &&
+          request.resource.data.uid == userId &&
+          // Role must remain strictly unchanged for non-admins
+          (!('role' in request.resource.data) || request.resource.data.role == resource.data.role)
+        )
+      );
+
+      // Delete: Only admins can delete user documents
+      allow delete: if isAdmin();
+    }
+
+    // ─── Products Collection ───────────────────────────────────────
+    match /products/{productId} {
+      // Authenticated users can browse products
+      allow read: if isAuthenticated();
+
+      // Admins have full write permissions
+      allow create, delete: if isAdmin();
+
+      // Updates: Admins can update any field.
+      // Customers during atomic checkout may only decrement stockQuantity without altering prices or product details.
+      allow update: if isAdmin() || (
+        isAuthenticated() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stockQuantity', 'updatedAt']) &&
+        request.resource.data.stockQuantity is int &&
+        request.resource.data.stockQuantity >= 0 &&
+        request.resource.data.stockQuantity <= resource.data.stockQuantity
+      );
+    }
+
+    // ─── Orders Collection ─────────────────────────────────────────
+    match /orders/{orderId} {
+      // Customer can read their own orders; Admin can read all orders
+      allow read: if (isAuthenticated() && resource.data.customerId == request.auth.uid) || isAdmin();
+
+      // Customer can create an order for themselves
+      allow create: if isAuthenticated() &&
+                       (request.resource.data.customerId == request.auth.uid || isAdmin()) &&
+                       request.resource.data.orderId == orderId &&
+                       request.resource.data.totalAmount is number &&
+                       request.resource.data.totalAmount >= 0;
+
+      // Status updates: Admins can update any order.
+      // Customers cannot mark orders as collected or delivered.
+      allow update: if isAdmin() || (
+        isAuthenticated() &&
+        resource.data.customerId == request.auth.uid &&
+        // Customer can only cancel their own order if still pending
+        resource.data.orderStatus == 'pending_confirmation' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['orderStatus', 'cancelledAt']) &&
+        request.resource.data.orderStatus == 'cancelled'
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // ─── Service Bookings ──────────────────────────────────────────
+    match /service_bookings/{bookingId} {
+      allow read: if (isAuthenticated() && resource.data.customerId == request.auth.uid) || isAdmin();
+
+      allow create: if isAuthenticated() &&
+                       (request.resource.data.customerId == request.auth.uid || isAdmin());
+
+      allow update: if isAdmin() || (
+        isAuthenticated() &&
+        resource.data.customerId == request.auth.uid &&
+        resource.data.status == 'pending' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'cancelledAt']) &&
+        request.resource.data.status == 'cancelled'
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // ─── Vehicles ──────────────────────────────────────────────────
+    match /vehicles/{vehicleId} {
+      allow read: if isAuthenticated() && (
+        resource.data.customerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow create: if isAuthenticated() && (
+        request.resource.data.customerId == request.auth.uid ||
+        request.resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow update: if isAuthenticated() && (
+        isAdmin() ||
+        (
+          (resource.data.customerId == request.auth.uid || resource.data.userId == request.auth.uid) &&
+          (!('customerId' in request.resource.data) || request.resource.data.customerId == resource.data.customerId) &&
+          (!('userId' in request.resource.data) || request.resource.data.userId == resource.data.userId)
+        )
+      );
+
+      allow delete: if isAuthenticated() && (
+        resource.data.customerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    // ─── Notifications ─────────────────────────────────────────────
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      // Users can only mark notifications as read
+      allow update: if isAuthenticated() &&
+                       resource.data.userId == request.auth.uid &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']);
+      allow create, delete: if isAdmin();
+    }
+
+    // ─── Support Tickets ───────────────────────────────────────────
+    match /support_tickets/{ticketId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isAdmin());
+      allow update, delete: if isAdmin();
+    }
+
+    // ─── Public Configurations & Categories ────────────────────────
+    match /vehicle_categories/{categoryId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /service_availability/{serviceId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /config/{configId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ─── Analytics & Search Logs ───────────────────────────────────
+    match /search_logs/{logId} {
+      allow create: if isAuthenticated();
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ─── OTP Rate Limiting ─────────────────────────────────────────
+    match /otp_rate_limits/{phone} {
+      allow read, write: if true; // Accessed before full authentication during phone verification
+    }
+
+    match /otp_counters/{phone}/{subcollection=**} {
+      allow read, write: if true; // Accessed before full authentication during phone verification
+    }
+  }
+}

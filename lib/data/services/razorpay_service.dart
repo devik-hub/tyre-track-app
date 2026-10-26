@@ -37,22 +37,32 @@ class RazorpayService {
     required String contact,
     required String email,
     required String description,
+    String? orderId,
   }) {
-    // IMPORTANT: Hardcoded Razorpay test key for sandbox testing.
-    // Replace with explicit LIVE KEY before configuring for production binary compilation!
-    const String testKeyId = 'rzp_test_dummyKeyForBuildingPhase10'; 
+    if (amount <= 0) {
+      debugPrint('Razorpay Error: Checkout amount must be greater than zero.');
+      return;
+    }
 
-    var options = {
-      'key': testKeyId,
+    // Configurable via --dart-define=RAZORPAY_KEY=rzp_live_...
+    const String defaultTestKey = 'rzp_test_dummyKeyForBuildingPhase10';
+    const String apiKey = String.fromEnvironment('RAZORPAY_KEY', defaultValue: defaultTestKey);
+
+    var options = <String, dynamic>{
+      'key': apiKey,
       'amount': (amount * 100).toInt(), // Razorpay expects amount in paise
       'name': 'Jagadale Retreads',
       'description': description,
       'timeout': 120, // in seconds
       'prefill': {
         'contact': contact,
-        'email': email
-      }
+        'email': email,
+      },
     };
+
+    if (orderId != null && orderId.isNotEmpty) {
+      options['order_id'] = orderId;
+    }
 
     try {
       _razorpay.open(options);
